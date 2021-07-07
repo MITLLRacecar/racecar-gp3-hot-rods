@@ -28,8 +28,12 @@ rc = racecar_core.create_racecar()
 # Functions
 ########################################################################################
 
+counter = 0
+mode = 0
 
 def start():
+    global counter
+    global mode
     """
     This function is run once every time the start button is pressed
     """
@@ -56,20 +60,89 @@ def update():
     After start() is run, this function is run every frame until the back button
     is pressed
     """
-    # TODO (warmup): Implement acceleration and steering
-    rc.drive.set_speed_angle(0, 0)
+    # When the right trigger is pressed, the car should accelerate forward.
+    # When the left trigger is pressed, the car should accelerate backward.
+    # The front wheels of the car should steer based on the horizontal position of the left joystick.
 
-    if rc.controller.was_pressed(rc.controller.Button.A):
+    global counter
+    global mode
+
+    if (mode == 0):
+        power = rc.controller.get_trigger(rc.controller.Trigger.RIGHT) - rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+        turn = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
+        rc.drive.set_speed_angle(power, turn)
+
+    if rc.controller.was_pressed(rc.controller.Button.A) and mode == 0:
+        counter = 0
+        mode = 1
         print("Driving in a circle...")
-        # TODO (main challenge): Drive in a circle
 
-    # TODO (main challenge): Drive in a square when the B button is pressed
+    if rc.controller.was_pressed(rc.controller.Button.B) and mode == 0:
+        counter = 0  
+        mode = 2
+        print("Driving in a square...")
+    
+    if rc.controller.was_pressed(rc.controller.Button.X) and mode == 0:
+        counter = 0  
+        mode = 3
+        print("Driving in a figure eight...")
 
-    # TODO (main challenge): Drive in a figure eight when the X button is pressed
+    if rc.controller.was_pressed(rc.controller.Button.Y) and mode == 0:
+        counter = 0  
+        mode = 4
+        print("Driving in a triangle...")
+    
+    # circle
+    if mode == 1 :
+        turn = 6
+        if (counter < turn) : rc.drive.set_speed_angle(1,1)
+        else : 
+            rc.drive.stop()
+            mode = 0
 
-    # TODO (main challenge): Drive in a shape of your choice when the Y button
-    # is pressed
+    # square
+    if mode == 2 :
+        straight = 2
+        turn = 1.32
+        if (counter < straight) : rc.drive.set_speed_angle(1,0)
+        elif (counter < straight + turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 2 * straight + turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 2 * straight + 2 * turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 3 * straight + 2 * turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 3 * straight + 3 * turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 4 * straight + 3 * turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 4 * straight + 4 * turn) : rc.drive.set_speed_angle(1, 1)
+        else : 
+            rc.drive.stop()
+            mode = 0
 
+    # figure eight
+    if mode == 3 :
+        straight = 2
+        turn = 3.25
+        if (counter < straight) : rc.drive.set_speed_angle(1,0)
+        elif (counter < straight + turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 2 * straight + turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 2 * straight + 2 * turn) : rc.drive.set_speed_angle(1, -1)
+        else : 
+            rc.drive.stop()
+            mode = 0
+    
+    # triangle
+    if mode == 4 : 
+        straight = 1
+        turn = 1.865
+        if (counter < straight) : rc.drive.set_speed_angle(1,0)
+        elif (counter < straight + turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 2 * straight + turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 2 * straight + 2 * turn) : rc.drive.set_speed_angle(1, 1)
+        elif (counter < 3 * straight + 2 * turn) : rc.drive.set_speed_angle(1, 0)
+        elif (counter < 3 * straight + 3 * turn) : rc.drive.set_speed_angle(1, 1)
+        else : 
+            rc.drive.stop()
+            mode = 0
+
+    counter += rc.get_delta_time()
 
 ########################################################################################
 # DO NOT MODIFY: Register start and update and begin execution
