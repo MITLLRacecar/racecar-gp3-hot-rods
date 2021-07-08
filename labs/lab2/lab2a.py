@@ -39,8 +39,8 @@ GREEN = ((60, 50, 50), (80, 255, 200))
 # >> Variables
 speed = 0.0  # The current speed of the car
 angle = 0.0  # The current angle of the car's wheels
-contour_center = None  # The (pixel row, pixel column) of contour
-contour_area = 0  # The area of contour
+contour_centers = [0,0,0]  # The (pixel row, pixel column) of contour
+contour_areas = [0,0,0]  # The area of contour
 
 ########################################################################################
 # Functions
@@ -52,24 +52,22 @@ def update_contour():
     Finds contours in the current color image and uses them to update contour_center
     and contour_area
     """
-    global contour_center
-    global contour_area
+    global contour_centers
+    global contour_areas
 
     image = rc.camera.get_color_image()
 
     if image is None:
-        contour_center = None
-        contour_area = 0
+        contour_centers = None
+        contour_areas = 0
     else:
-        # TODO (challenge 1): Search for multiple tape colors with a priority order
-        # (currently we only search for blue)
 
         # Crop the image to the floor directly in front of the car
         image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
         # Find all of the blue contours
         contours = [rc_utils.find_contours(image, RED[0], RED[1]), 
-        rc_utils.find_contours(image, GREEN[0], GREEN[1]),
+         rc_utils.find_contours(image, GREEN[0], GREEN[1]),
          rc_utils.find_contours(image, BLUE[0], BLUE[1])]
 
         # Select the largest contour
@@ -77,18 +75,22 @@ def update_contour():
          rc_utils.get_largest_contour(contours[1], MIN_CONTOUR_AREA),
          rc_utils.get_largest_contour(contours[2], MIN_CONTOUR_AREA)]
 
-        if contour is not None:
-            # Calculate contour information
-            contour_center = rc_utils.get_contour_center(contour[0])
-            contour_area = rc_utils.get_contour_area(contour[0])
+        i = 0
+        for x in contour :
+            if x is not None:
+                # Calculate contour information
+                contour_centers[i] = rc_utils.get_contour_center(x)
+                contour_areas[i] = rc_utils.get_contour_area(x)
 
-            # Draw contour onto the image
-            rc_utils.draw_contour(image, contour[0])
-            rc_utils.draw_circle(image, contour_center)
+              # Draw contour onto the image
+                rc_utils.draw_contour(image, x)
+                rc_utils.draw_circle(image, contour_centers[i])
 
-        else:
-            contour_center = None
-            contour_area = 0
+            else :
+                contour_centers[i] = None
+                contour_areas[i] = 0
+
+            i += 1
 
         # Display the image to the screen
         rc.display.show_color_image(image)
@@ -133,29 +135,8 @@ def update():
 
     # Search for contours in the current color image
     update_contour()
-
-    # Choose an angle based on contour_center
-    # If we could not find a contour, keep the previous angle
-    if contour_center is not None:
-        # Current implementation: bang-bang control (very choppy)
-        # Replaced with a P controller
-        kP = 0.9
-        maxAngle = 1
-        minAngle = -1
-        # scale angle bounds to that of camera
-        scale = 1 / (rc.camera.get_width() / 2)
-
-        error = (contour_center[1] - (rc.camera.get_width() / 2)) * scale
-        angle = kP * error
-
-        # prevent overflow
-        if angle > maxAngle : angle = maxAngle
-        elif angle < minAngle: angle = minAngle
-        
-        # if contour_center[1] < rc.camera.get_width() / 2:
-        #     angle = -1
-        # else:
-        #     angle = 1
+    #follow contours with priority for red, green, then blue
+    follow_contour()
 
     # Use the triggers to control the car's speed
     forwardSpeed = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
@@ -169,12 +150,35 @@ def update():
         print("Speed:", speed, "Angle:", angle)
 
     # Print the center and area of the largest contour when B is held down
+    # TODO fix contour_centers telemetry only at index 0
     if rc.controller.is_down(rc.controller.Button.B):
-        if contour_center is None:
+        if contour_centers[0] is None:
             print("No contour found")
         else:
-            print("Center:", contour_center, "Area:", contour_area)
+            print("Center:", contour_centers[0], "Area:", contour_areas[0])
 
+def follow_contour():
+    # Choose an angle based on contour_center
+    # If we could not find a contour, keep the previous angle
+    global angle
+    i = 0
+    for x in contour_centers :
+        if x is not None: 
+            # Bang-bang control (very choppy) replaced with a P controller
+            if i == 0 : 
+                i += 1
+                kP = 1.0 # or 0.9
+                maxAngle = 1
+                minAngle = -1
+                # scale angle bounds to that of camera
+                scale = 1 / (rc.camera.get_width() / 2)
+
+                error = (x[1] - (rc.camera.get_width() / 2)) * scale
+                angle = kP * error
+
+                # prevent overflow
+                if angle > maxAngle : angle = maxAngle
+                elif angle < minAngle: angle = minAngle
 
 def update_slow():
     """
@@ -187,14 +191,15 @@ def update_slow():
         print("X" * 10 + " (No image) " + "X" * 10)
     else:
         # If an image is found but no contour is found, print all dashes
-        if contour_center is None:
-            print("-" * 32 + " : area = " + str(contour_area))
+        # TODO implement other colors here where contour_centers is present
+        if contour_centers[0] is None:
+            print("-" * 32 + " : area = " + str(contour_areas[0]))
 
         # Otherwise, print a line of dashes with a | indicating the contour x-position
         else:
             s = ["-"] * 32
-            s[int(contour_center[1] / 20)] = "|"
-            print("".join(s) + " : area = " + str(contour_area))
+            s[int(contour_centers[0][1] / 20)] = "|"
+            print("".join(s) + " : area = " + str(contour_areas[0]))
 
 
 ########################################################################################
