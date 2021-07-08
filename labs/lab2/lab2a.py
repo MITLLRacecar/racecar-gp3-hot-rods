@@ -33,7 +33,8 @@ CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
 
 # Colors, stored as a pair (hsv_min, hsv_max)
 BLUE = ((90, 50, 50), (120, 255, 255))  # The HSV range for the color blue
-# TODO (challenge 1): add HSV ranges for other colors
+RED = ((0, 50, 50), (20, 255, 255))
+GREEN = ((60, 50, 50), (80, 255, 200))
 
 # >> Variables
 speed = 0.0  # The current speed of the car
@@ -67,18 +68,22 @@ def update_contour():
         image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
         # Find all of the blue contours
-        contours = rc_utils.find_contours(image, BLUE[0], BLUE[1])
+        contours = [rc_utils.find_contours(image, RED[0], RED[1]), 
+        rc_utils.find_contours(image, GREEN[0], GREEN[1]),
+         rc_utils.find_contours(image, BLUE[0], BLUE[1])]
 
         # Select the largest contour
-        contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
+        contour = [rc_utils.get_largest_contour(contours[0], MIN_CONTOUR_AREA),
+         rc_utils.get_largest_contour(contours[1], MIN_CONTOUR_AREA),
+         rc_utils.get_largest_contour(contours[2], MIN_CONTOUR_AREA)]
 
         if contour is not None:
             # Calculate contour information
-            contour_center = rc_utils.get_contour_center(contour)
-            contour_area = rc_utils.get_contour_area(contour)
+            contour_center = rc_utils.get_contour_center(contour[0])
+            contour_area = rc_utils.get_contour_area(contour[0])
 
             # Draw contour onto the image
-            rc_utils.draw_contour(image, contour)
+            rc_utils.draw_contour(image, contour[0])
             rc_utils.draw_circle(image, contour_center)
 
         else:
@@ -133,11 +138,24 @@ def update():
     # If we could not find a contour, keep the previous angle
     if contour_center is not None:
         # Current implementation: bang-bang control (very choppy)
-        # TODO (warmup): Implement a smoother way to follow the line
-        if contour_center[1] < rc.camera.get_width() / 2:
-            angle = -1
-        else:
-            angle = 1
+        # Replaced with a P controller
+        kP = 0.9
+        maxAngle = 1
+        minAngle = -1
+        # scale angle bounds to that of camera
+        scale = 1 / (rc.camera.get_width() / 2)
+
+        error = (contour_center[1] - (rc.camera.get_width() / 2)) * scale
+        angle = kP * error
+
+        # prevent overflow
+        if angle > maxAngle : angle = maxAngle
+        elif angle < minAngle: angle = minAngle
+        
+        # if contour_center[1] < rc.camera.get_width() / 2:
+        #     angle = -1
+        # else:
+        #     angle = 1
 
     # Use the triggers to control the car's speed
     forwardSpeed = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)

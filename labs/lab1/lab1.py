@@ -32,8 +32,6 @@ counter = 0
 mode = 0
 
 def start():
-    global counter
-    global mode
     """
     This function is run once every time the start button is pressed
     """
