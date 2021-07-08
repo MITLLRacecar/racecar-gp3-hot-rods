@@ -161,24 +161,22 @@ def follow_contour():
     # Choose an angle based on contour_center
     # If we could not find a contour, keep the previous angle
     global angle
-    i = 0
     for x in contour_centers :
         if x is not None: 
             # Bang-bang control (very choppy) replaced with a P controller
-            if i == 0 : 
-                i += 1
-                kP = 1.0 # or 0.9
-                maxAngle = 1
-                minAngle = -1
-                # scale angle bounds to that of camera
-                scale = 1 / (rc.camera.get_width() / 2)
+            kP = 1.0 # or 0.9
+            maxAngle = 1
+            minAngle = -1
+            # scale angle bounds to that of camera
+            scale = 1 / (rc.camera.get_width() / 2)
 
-                error = (x[1] - (rc.camera.get_width() / 2)) * scale
-                angle = kP * error
+            error = (x[1] - (rc.camera.get_width() / 2)) * scale
+            angle = kP * error
 
-                # prevent overflow
-                if angle > maxAngle : angle = maxAngle
-                elif angle < minAngle: angle = minAngle
+             # prevent overflow
+            if angle > maxAngle : angle = maxAngle
+            elif angle < minAngle: angle = minAngle
+            return
 
 def update_slow():
     """
