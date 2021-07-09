@@ -41,6 +41,8 @@ speed = 0.0  # The current speed of the car
 angle = 0.0  # The current angle of the car's wheels
 contour_centers = [0,0,0]  # The (pixel row, pixel column) of contour
 contour_areas = [0,0,0]  # The area of contour
+contour_center = None
+contout_area = 0
 
 ########################################################################################
 # Functions
@@ -65,12 +67,13 @@ def update_contour():
         # Crop the image to the floor directly in front of the car
         image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
-        # Find all of the blue contours
+        # Find all of the contours
         contours = [rc_utils.find_contours(image, RED[0], RED[1]), 
          rc_utils.find_contours(image, GREEN[0], GREEN[1]),
          rc_utils.find_contours(image, BLUE[0], BLUE[1])]
 
-        # Select the largest contour
+        # Select the largest contours
+        # TODO priority order should be sorted into one contour beforehand, not afterwards
         contour = [rc_utils.get_largest_contour(contours[0], MIN_CONTOUR_AREA),
          rc_utils.get_largest_contour(contours[1], MIN_CONTOUR_AREA),
          rc_utils.get_largest_contour(contours[2], MIN_CONTOUR_AREA)]

@@ -18,6 +18,8 @@ sys.path.insert(1, "../../library")
 import racecar_core
 import racecar_utils as rc_utils
 
+from enum import IntEnum
+
 ########################################################################################
 # Global variables
 ########################################################################################
@@ -36,7 +38,22 @@ speed = 0.0  # The current speed of the car
 angle = 0.0  # The current angle of the car's wheels
 contour_center = None  # The (pixel row, pixel column) of contour
 contour_area = 0  # The area of contour
+contour_area_error = 0
 
+min_area = 27900.0 # 29 cm
+max_area = 27000.0 # 31 cm
+goal_area = 27570.5
+
+area_admissable_error = 40 # 29-31 cm is about 900
+area_stopping_range = 15000 # roughly ~ 4 cm 
+angle_admissable_error = 0.1 # out of [-1, 1] range
+
+class State(IntEnum):
+    search = 0
+    approach = 1
+    stop = 2
+
+robot_state: State = State.search
 ########################################################################################
 # Functions
 ########################################################################################
@@ -85,10 +102,14 @@ def start():
     """
     global speed
     global angle
+    global robot_state
+
+    robot_state = State.search
 
     # Initialize variables
     speed = 0
     angle = 0
+    #Maximum speed is 1 @ 100 CM or greater, Minimum is -0.5 at 0 CM.
 
     # Set initial driving speed and angle
     rc.drive.set_speed_angle(speed, angle)
@@ -99,7 +120,6 @@ def start():
     # Print start message
     print(">> Lab 2B - Color Image Cone Parking")
 
-
 def update():
     """
     After start() is run, this function is run every frame until the back button
@@ -107,11 +127,33 @@ def update():
     """
     global speed
     global angle
-
+    global robot_state
+    global contour_area_error
     # Search for contours in the current color image
     update_contour()
+    contour_area_error = goal_area - contour_area
 
     # TODO: Park the car 30 cm away from the closest orange cone
+
+    if robot_state == State.search:
+        search()
+
+        if contour_area != 0:
+            robot_state = State.approach
+            
+    elif robot_state == State.approach:
+        approach()
+    
+        if contour_area_error < area_admissable_error and rc.physics.get_linear_acceleration()[2] == 0 and speed < 0.02 : 
+            robot_state = State.stop
+
+        if contour_area == 0:
+            robot_state = State.search
+
+    elif robot_state == State.stop:
+        stop()
+
+    rc.drive.set_speed_angle(speed, angle)
 
     # Print the current speed and angle when the A button is held down
     if rc.controller.is_down(rc.controller.Button.A):
@@ -124,8 +166,60 @@ def update():
         else:
             print("Center:", contour_center, "Area:", contour_area)
 
+def search():
+    global speed
+    global angle
+    speed = 1
+    angle = 1
+
+def approach():
+    global speed
+    global angle
+    speed = throttle_controller()
+    angle = angle_controller()
+
+def stop(): 
+    global speed
+    global angle
+    speed = 0
+    angle = 0
+
+def angle_controller():
+    kP = 1
+    angle = 0
+    if contour_center is not None: 
+        error = contour_center[1] - rc.camera.get_width() / 2
+        angle = kP * 2 * error/rc.camera.get_width()
+    return angle
+
+def throttle_controller(): 
+    #If within contour range, brake until acceleration = 0. 
+    global contour_area_error
+    global area_stopping_range
+    max_speed = 0.30
+    kP = 3
+    speed = 0
+    
+    if contour_area != 0: 
+        # if we are farther than the stopping range, apply full power
+        if contour_area_error > area_stopping_range : speed = max_speed
+        # elif contour_area < goal_area: speed = -.1
+        else :
+            # else scale our power by our error clamped within the stopping range
+            # error as a percentage instead of area
+            scale = 1 / area_stopping_range
+            speed = kP * contour_area_error * scale
+
+    if speed > max_speed : speed = max_speed
+    elif speed < -max_speed : speed = -max_speed
+    return speed
 
 def update_slow():
+    global speed
+    global angle
+    print("Robot Status: " + str(robot_state))
+    print("Speed: " + str(speed))
+    print("Angle: " + str(angle))
     """
     After start() is run, this function is run at a constant rate that is slower
     than update().  By default, update_slow() is run once per second
