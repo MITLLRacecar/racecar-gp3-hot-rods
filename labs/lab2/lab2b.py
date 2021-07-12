@@ -42,7 +42,7 @@ contour_area_error = 0
 
 min_area = 27900.0 # 29 cm
 max_area = 27000.0 # 31 cm
-goal_area = 27570.5
+goal_area = 27460.0
 
 area_admissable_error = 40 # 29-31 cm is about 900
 area_stopping_range = 15000 # roughly ~ 4 cm 
