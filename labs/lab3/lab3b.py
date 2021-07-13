@@ -75,7 +75,7 @@ def update():
     global depth_image
     global cone_distance
     
-    # TODO: Park the car 30 cm away from the closest orange cone.
+    # Park the car 30 cm away from the closest orange cone.
     # Use both color and depth information to handle cones of multiple sizes.
     # You may wish to copy some of your code from lab2b.py
 
