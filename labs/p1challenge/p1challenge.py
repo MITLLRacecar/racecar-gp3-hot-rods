@@ -11,12 +11,15 @@ Phase 1 Challenge - Cone Slaloming
 ########################################################################################
 
 import sys
+from typing import Tuple
 import cv2 as cv
 import numpy as np
+from numpy.testing._private.utils import jiffies
 
 sys.path.insert(0, "../../library")
 import racecar_core
 import racecar_utils as rc_utils
+from enum import IntEnum
 
 ########################################################################################
 # Global variables
@@ -24,7 +27,37 @@ import racecar_utils as rc_utils
 
 rc = racecar_core.create_racecar()
 
-# Add any global variables here
+class State(IntEnum) :
+    approaching = 0 # Go around red cone
+    passing = 1 # Go around blue cone
+    stopping = 2 # Finish line
+    searching = 3 # Manual control until we re-aquire
+
+class Cone(IntEnum) :
+    red = 0
+    blue = 1
+
+robotState = State.approaching
+coneVisible = None
+coneApproaching = None
+
+# The HSV ranges (min, max)
+RED = ((165, 50, 50), (179, 255, 255))
+BLUE = ((95, 150, 150), (120, 255, 255))
+ALLCOLOR = ((0,50,50), (130,255,255))
+
+# FINALS
+
+MAX_SPEED = 0.65
+MIN_CONTOUR_AREA = 400
+
+depthImage = None
+colorImage = None
+waypointCenter = (0,0)
+coneCenter = None
+speed = 0
+angle = 0
+counter = 0
 
 ########################################################################################
 # Functions
@@ -33,7 +66,7 @@ rc = racecar_core.create_racecar()
 
 def start():
     """
-    This function is run once every time the start button is pressed
+    This function is run once every time the star*t button is pressed
     """
     # Have the car begin at a stop
     rc.drive.stop()
@@ -41,15 +74,159 @@ def start():
     # Print start message
     print(">> Phase 1 Challenge: Cone Slaloming")
 
+def findCone():
+    global colorImage, depthImage, waypointCenter, coneCenter, coneVisible
+    
+    if colorImage is None and depthImage is None:
+        coneCenter = None
+    else:
+        blueContours = rc_utils.find_contours(colorImage, BLUE[0], BLUE[1])
+        redContours = rc_utils.find_contours(colorImage, RED[0], RED[1])  
+        blueLargestContour = rc_utils.get_largest_contour(blueContours, MIN_CONTOUR_AREA)      
+        redLargestContour = rc_utils.get_largest_contour(redContours, MIN_CONTOUR_AREA)
+
+        if blueLargestContour is None : blueArea = 0
+        else : blueArea = rc_utils.get_contour_area(blueLargestContour)
+        if redLargestContour is None : redArea = 0
+        else: redArea = rc_utils.get_contour_area(redLargestContour)
+
+        if blueArea > redArea:
+            closestCone = blueLargestContour
+            print("Contour area: " + str(blueArea))
+            coneVisible = Cone.blue
+        else :
+            closestCone = redLargestContour
+            print("Contour area: " + str(redArea))
+            coneVisible = Cone.red
+
+        coneCenter = rc_utils.get_contour_center(closestCone) # None when redArea, blueArea are 0
+        
+def calculateWaypoint():
+    global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, counter
+    if coneCenter is not None : 
+        distanceToCone = depthImage[coneCenter[0]][coneCenter[1]]
+        tan60 = 3.25 # prev: 3.0
+        k = 5000
+        x = (k /distanceToCone) * tan60
+
+        pointDirection = 1
+        if coneVisible == Cone.blue : pointDirection = -1
+
+        # Clamp to prevent viewport overflow and integer casting overflow
+        waypointCenter = (rc_utils.clamp(coneCenter[0], 0, rc.camera.get_height() - 1), rc_utils.clamp(int(rc_utils.clamp(coneCenter[1] + (pointDirection * x), 0, sys.maxsize)), 0, rc.camera.get_width() - 1))
+        print("Found " + str(coneVisible)[5:] + " waypoint at: " + str(waypointCenter))
+    else : print("Could not find waypoint")
 
 def update():
     """
     After start() is run, this function is run every frame until the back button
     is pressed
     """
-    # TODO: Slalom between red and blue cones.  The car should pass to the right of
+    # Slalom between red and blue cones.  The car should pass to the right of
     # each red cone and the left of each blue cone.
+    global colorImage, depthImage, speed, angle, coneCenter, waypointCenter, robotState
+    colorImage = rc.camera.get_color_image()
+    depthImage = rc.camera.get_depth_image()
+    
+    findCone()
+    calculateWaypoint()
 
+    if robotState == robotState.approaching :
+        approachCone()
+    if robotState == robotState.passing :
+        passCone()
+    elif robotState == robotState.stopping :
+        stop()
+        # TODO: When finish line detected, pass and stop
+    elif robotState == robotState.searching:
+        search()
+        # TODO: Implement autonomous searching
+
+    rc.drive.set_speed_angle(speed, angle)
+    
+    print("Robot Status: " + str(robotState)[6:])
+
+    if coneCenter is not None : rc_utils.draw_circle(colorImage, coneCenter)
+    if waypointCenter is not None : rc_utils.draw_circle(colorImage, waypointCenter)
+    rc.display.show_color_image(colorImage) 
+
+def approachCone():
+    global speed, angle, counter, coneApproaching, coneVisible, robotState
+    angle = angleController()
+    speed = MAX_SPEED
+
+    if counter == 0 :
+        coneApproaching = coneVisible
+        counter += rc.get_delta_time()
+        
+    # If next cone detected, or we lose all cones in viewport
+    if coneApproaching != coneVisible or coneCenter == None:
+        robotState = State.passing
+        counter = 0
+
+def passCone():
+    global speed, angle, counter, coneVisible, robotState, coneApproaching
+    coastingTime = 0.5
+    maxTurningTime = 2.0
+    turnAngle = 0.75
+
+    counter += rc.get_delta_time()
+
+    if counter < coastingTime :
+        speed = MAX_SPEED * 0.9
+        angle = 0
+    elif (counter < maxTurningTime + coastingTime and coneApproaching == coneVisible) or coneCenter is None:
+        speed = MAX_SPEED * 0.8
+        angle = turnAngle if coneApproaching == Cone.blue else -turnAngle
+    else :
+        if coneApproaching != coneVisible : # and counter < afterTurnTime + coastingTime + maxTurningTime
+            robotState = State.approaching
+            counter = 0 
+
+def passCone2():
+    global depthImage, speed, angle, coneCenter, coneVisible, robotState, coneApproaching, coneVisible
+    turnDistance = 30
+    if coneApproaching == coneVisible and depthImage[coneCenter[0]][coneCenter[1]] < turnDistance:
+        speed = MAX_SPEED
+    else :
+        # if coneCenter == None : robotState = State.searching
+        robotState = State.approaching
+
+def search():
+    global speed, angle
+    rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+    lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+    speed = rt - lt
+    angle = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
+
+def stop(): 
+    global speed, angle
+    speed = 0
+    angle = 0 
+
+# def speedController():
+#     global depthImage
+#     global closest_pixel
+#     kP = 0.55
+#     braking_distance = 100
+#     stopping_distance = 20
+#     speed = 0
+
+#     if depthImage is not None : 
+#         distance = rc_utils.get_pixel_average_distance(depthImage, closest_pixel, 3)
+#         print("Distance: " + str(distance))
+
+#         error = 1/braking_distance * (distance - stopping_distance)
+#         speed = error * kP
+    
+#     return rc_utils.clamp(speed, -0.6, 0.6)
+
+def angleController():
+    kP = 1.0
+    angle = 0
+    error = waypointCenter[1] - rc.camera.get_width() / 2
+    angle =  kP * error / (rc.camera.get_width() / 2)
+    return rc_utils.clamp(angle, -1, 1)
 
 ########################################################################################
 # DO NOT MODIFY: Register start and update and begin execution

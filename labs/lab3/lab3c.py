@@ -60,8 +60,7 @@ def update():
     After start() is run, this function is run every frame until the back button
     is pressed
     """
-    # Park the car 20 cm away from the closest wall with the car directly facing
-    # the wall
+    # Park the car 20 cm away from the closest wall with the car directly facing the wall
     global depth_image
     global closest_pixel
     global robot_state
@@ -76,7 +75,7 @@ def update():
         speed = speed_controller()
         angle = angle_controller()
 
-        if abs(20 - rc_utils.get_pixel_average_distance(depth_image, closest_pixel, 1)) < 0.2 and abs(rc.physics.get_angular_velocity()[2]) < 0.02 : 
+        if abs(20 - rc_utils.get_pixel_average_distance(depth_image, closest_pixel, 1)) < 0.2 and abs(rc.physics.get_angular_velocity()[2]) < 0.03 : 
             robot_state = State.stopped
             print("Robot Status: Stopped")
     else:
@@ -94,9 +93,9 @@ def speed_controller() :
     global depth_image
     global closest_pixel
     kP = 0.55
-    speed = 0
     braking_distance = 100
     stopping_distance = 20
+    speed = 0
 
     if depth_image is not None : 
         distance = rc_utils.get_pixel_average_distance(depth_image, closest_pixel, 3)
