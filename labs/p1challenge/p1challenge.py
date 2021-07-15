@@ -45,11 +45,11 @@ coneApproaching = None
 RED = ((165, 50, 50), (179, 255, 255))
 BLUE = ((95, 150, 150), (120, 255, 255))
 ALLCOLOR = ((0,50,50), (130,255,255))
-
+WHITE = ((90, 30, 250), (110, 45, 255))
 # FINALS
 
-MAX_SPEED = 0.65
-MIN_CONTOUR_AREA = 400
+MAX_SPEED = 1.0
+MIN_CONTOUR_AREA = 600
 
 depthImage = None
 colorImage = None
@@ -58,6 +58,9 @@ coneCenter = None
 speed = 0
 angle = 0
 counter = 0
+coneCounter = 0
+finishLine = False
+distanceToCone = 0
 
 ########################################################################################
 # Functions
@@ -102,12 +105,12 @@ def findCone():
         coneCenter = rc_utils.get_contour_center(closestCone) # None when redArea, blueArea are 0
         
 def calculateWaypoint():
-    global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, counter
+    global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, counter, finishLine, distanceToCone
     if coneCenter is not None : 
         distanceToCone = depthImage[coneCenter[0]][coneCenter[1]]
-        tan60 = 3.25 # prev: 3.0
+        tan73 = 3.25 if not finishLine else 3.25 # prev: 3.0
         k = 5000
-        x = (k /distanceToCone) * tan60
+        x = (k /distanceToCone) * tan73
 
         pointDirection = 1
         if coneVisible == Cone.blue : pointDirection = -1
@@ -117,6 +120,31 @@ def calculateWaypoint():
         print("Found " + str(coneVisible)[5:] + " waypoint at: " + str(waypointCenter))
     else : print("Could not find waypoint")
 
+def findFinishLine():
+    global finishLine, coneCounter, colorImage, MAX_SPEED
+    MIN_CONTOUR_AREA = 1000
+    MAX_CONTOUR_AREA = 5000
+    HARD_SPEED_MULTIPLIER = 0.3
+
+    if colorImage is None:
+        finishLine = False
+    else: 
+        finishLineContour = rc_utils.get_largest_contour(rc_utils.find_contours(colorImage, WHITE[0], WHITE[1]), MIN_CONTOUR_AREA)
+        finishLineCenter = rc_utils.get_contour_center(finishLineContour)
+
+        if finishLineContour is not None and rc_utils.get_contour_area(finishLineContour) < MAX_CONTOUR_AREA:
+            # Only detect finish line once
+            if not finishLine and coneCounter > 8 :
+                finishLine = True
+                coneCounter = 0
+                print(rc_utils.get_contour_area(finishLineContour))
+                print("Found finish line")
+                rc_utils.draw_circle(colorImage, finishLineCenter, (0,0,255))
+                MAX_SPEED = MAX_SPEED * HARD_SPEED_MULTIPLIER
+            elif finishLine and coneCounter > 2 :
+                finishLine = False
+                MAX_SPEED = 1.25 * MAX_SPEED / HARD_SPEED_MULTIPLIER
+        
 def update():
     """
     After start() is run, this function is run every frame until the back button
@@ -130,6 +158,7 @@ def update():
     
     findCone()
     calculateWaypoint()
+    findFinishLine()
 
     if robotState == robotState.approaching :
         approachCone()
@@ -151,7 +180,7 @@ def update():
     rc.display.show_color_image(colorImage) 
 
 def approachCone():
-    global speed, angle, counter, coneApproaching, coneVisible, robotState
+    global speed, angle, counter, coneApproaching, coneVisible, robotState, coneCounter
     angle = angleController()
     speed = MAX_SPEED
 
@@ -160,37 +189,33 @@ def approachCone():
         counter += rc.get_delta_time()
         
     # If next cone detected, or we lose all cones in viewport
+    #TODO if distanceTOCone is a certain value, robotState = State.passing
     if coneApproaching != coneVisible or coneCenter == None:
         robotState = State.passing
+        coneCounter += 1
         counter = 0
 
 def passCone():
-    global speed, angle, counter, coneVisible, robotState, coneApproaching
-    coastingTime = 0.5
-    maxTurningTime = 2.0
-    turnAngle = 0.75
+    global speed, angle, counter, coneVisible, robotState, coneApproaching, finishLine, distanceToCone
+    turningSpeed = 1.0 if not finishLine else 0.3
+    coastingTime = 0.3 if not finishLine else 2.5
+    maxTurningTime = 2.0 if not finishLine else 5.0
+    turnAngle = 1 if not finishLine else 0.65
 
     counter += rc.get_delta_time()
 
     if counter < coastingTime :
         speed = MAX_SPEED * 0.9
-        angle = 0
+        if not finishLine : angle = 0
+        else : angle = turnAngle * 0.15 if coneApproaching == Cone.blue else -turnAngle * 0.15
     elif (counter < maxTurningTime + coastingTime and coneApproaching == coneVisible) or coneCenter is None:
-        speed = MAX_SPEED * 0.8
+        speed = MAX_SPEED * turningSpeed
         angle = turnAngle if coneApproaching == Cone.blue else -turnAngle
     else :
         if coneApproaching != coneVisible : # and counter < afterTurnTime + coastingTime + maxTurningTime
             robotState = State.approaching
             counter = 0 
 
-def passCone2():
-    global depthImage, speed, angle, coneCenter, coneVisible, robotState, coneApproaching, coneVisible
-    turnDistance = 30
-    if coneApproaching == coneVisible and depthImage[coneCenter[0]][coneCenter[1]] < turnDistance:
-        speed = MAX_SPEED
-    else :
-        # if coneCenter == None : robotState = State.searching
-        robotState = State.approaching
 
 def search():
     global speed, angle
@@ -222,7 +247,8 @@ def stop():
 #     return rc_utils.clamp(speed, -0.6, 0.6)
 
 def angleController():
-    kP = 1.0
+    global waypointCenter
+    kP = 1.5 if not finishLine else 3
     angle = 0
     error = waypointCenter[1] - rc.camera.get_width() / 2
     angle =  kP * error / (rc.camera.get_width() / 2)
