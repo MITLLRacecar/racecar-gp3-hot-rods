@@ -180,7 +180,7 @@ def update():
     rc.display.show_color_image(colorImage) 
 
 def approachCone():
-    global speed, angle, counter, coneApproaching, coneVisible, robotState, coneCounter
+    global speed, angle, counter, coneApproaching, coneVisible, robotState, coneCounter, depthImage, coneCenter
     angle = angleController()
     speed = MAX_SPEED
 
@@ -190,24 +190,24 @@ def approachCone():
         
     # If next cone detected, or we lose all cones in viewport
     #TODO if distanceTOCone is a certain value, robotState = State.passing
-    if coneApproaching != coneVisible or coneCenter == None:
+    if coneApproaching != coneVisible or coneCenter is None :
         robotState = State.passing
         coneCounter += 1
         counter = 0
 
 def passCone():
-    global speed, angle, counter, coneVisible, robotState, coneApproaching, finishLine, distanceToCone
+    global speed, angle, counter, coneVisible, robotState, coneApproaching, finishLine, distanceToCone, depthImage, coneCenter
     turningSpeed = 1.0 if not finishLine else 0.3
     coastingTime = 0.3 if not finishLine else 2.5
     maxTurningTime = 2.0 if not finishLine else 5.0
-    turnAngle = 1 if not finishLine else 0.65
+    turnAngle = 0.8 if not finishLine else 0.65
+    turnInAngle = 0.175
 
     counter += rc.get_delta_time()
 
     if counter < coastingTime :
-        speed = MAX_SPEED * 0.9
-        if not finishLine : angle = 0
-        else : angle = turnAngle * 0.15 if coneApproaching == Cone.blue else -turnAngle * 0.15
+        speed = MAX_SPEED
+        angle = turnInAngle if coneApproaching == Cone.blue else -turnInAngle
     elif (counter < maxTurningTime + coastingTime and coneApproaching == coneVisible) or coneCenter is None:
         speed = MAX_SPEED * turningSpeed
         angle = turnAngle if coneApproaching == Cone.blue else -turnAngle
@@ -248,7 +248,7 @@ def stop():
 
 def angleController():
     global waypointCenter
-    kP = 1.5 if not finishLine else 3
+    kP = 0.8 if not finishLine else 3
     angle = 0
     error = waypointCenter[1] - rc.camera.get_width() / 2
     angle =  kP * error / (rc.camera.get_width() / 2)
