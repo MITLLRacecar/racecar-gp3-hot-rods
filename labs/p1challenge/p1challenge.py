@@ -49,7 +49,7 @@ WHITE = ((90, 30, 250), (110, 45, 255))
 # FINALS
 
 MAX_SPEED = 1.0
-MIN_CONTOUR_AREA = 600
+MIN_CONTOUR_AREA = 400
 
 depthImage = None
 colorImage = None
@@ -69,7 +69,7 @@ distanceToCone = 0
 
 def start():
     """
-    This function is run once every time the star*t button is pressed
+    This function is run once every time the start button is pressed
     """
     # Have the car begin at a stop
     rc.drive.stop()
@@ -108,7 +108,7 @@ def calculateWaypoint():
     global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, counter, finishLine, distanceToCone
     if coneCenter is not None : 
         distanceToCone = depthImage[coneCenter[0]][coneCenter[1]]
-        tan73 = 3.25 if not finishLine else 3.25 # prev: 3.0
+        tan73 = 3.25 if not finishLine else 3.45 # prev: 3.0
         k = 5000
         x = (k /distanceToCone) * tan73
 
@@ -143,7 +143,7 @@ def findFinishLine():
                 MAX_SPEED = MAX_SPEED * HARD_SPEED_MULTIPLIER
             elif finishLine and coneCounter > 2 :
                 finishLine = False
-                MAX_SPEED = 1.25 * MAX_SPEED / HARD_SPEED_MULTIPLIER
+                MAX_SPEED = MAX_SPEED / HARD_SPEED_MULTIPLIER
         
 def update():
     """
@@ -151,7 +151,7 @@ def update():
     is pressed
     """
     # Slalom between red and blue cones.  The car should pass to the right of
-    # each red cone and the left of each blue cone.
+    # each red cone and the left of each blue cone. 
     global colorImage, depthImage, speed, angle, coneCenter, waypointCenter, robotState
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
@@ -159,6 +159,10 @@ def update():
     findCone()
     calculateWaypoint()
     findFinishLine()
+
+    if coneCounter == 0 :
+        rc.drive.set_max_speed(0.8)
+    else : rc.drive.set_max_speed(0.8)
 
     if robotState == robotState.approaching :
         approachCone()
@@ -192,21 +196,26 @@ def approachCone():
     #TODO if distanceTOCone is a certain value, robotState = State.passing
     if coneApproaching != coneVisible or coneCenter is None :
         robotState = State.passing
+        angle = 0
         coneCounter += 1
         counter = 0
 
 def passCone():
     global speed, angle, counter, coneVisible, robotState, coneApproaching, finishLine, distanceToCone, depthImage, coneCenter
-    turningSpeed = 1.0 if not finishLine else 0.3
-    coastingTime = 0.3 if not finishLine else 2.5
-    maxTurningTime = 2.0 if not finishLine else 5.0
-    turnAngle = 0.8 if not finishLine else 0.65
-    turnInAngle = 0.175
+    turningSpeed = -0.55 if not finishLine else 0.4 # normal speed : 1.0
+    coastingTime = 0.15 if not finishLine else 2.4 # normal speed : 0.35
+    maxTurningTime = 2.0 if not finishLine else 5.0 
+    turnAngle = 1.0 if not finishLine else 1.0 # normal speed : 0.825
+    turnInAngle = 0.15 if not finishLine else 0 # normal speed : 0.175
 
     counter += rc.get_delta_time()
+    # iterations = coastingTime / rc.get_delta_time()
+    # increment = 0.25 * turnAngle / iterations
 
     if counter < coastingTime :
         speed = MAX_SPEED
+        # if coneApproaching : angle += increment
+        # else : angle -= increment
         angle = turnInAngle if coneApproaching == Cone.blue else -turnInAngle
     elif (counter < maxTurningTime + coastingTime and coneApproaching == coneVisible) or coneCenter is None:
         speed = MAX_SPEED * turningSpeed
@@ -215,7 +224,6 @@ def passCone():
         if coneApproaching != coneVisible : # and counter < afterTurnTime + coastingTime + maxTurningTime
             robotState = State.approaching
             counter = 0 
-
 
 def search():
     global speed, angle
@@ -248,7 +256,7 @@ def stop():
 
 def angleController():
     global waypointCenter
-    kP = 0.8 if not finishLine else 3
+    kP = 2.1 if not finishLine else 3
     angle = 0
     error = waypointCenter[1] - rc.camera.get_width() / 2
     angle =  kP * error / (rc.camera.get_width() / 2)

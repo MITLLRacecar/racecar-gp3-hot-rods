@@ -37,6 +37,7 @@ def start():
     """
     # Begin at a full stop
     rc.drive.stop()
+    rc.drive.set_max_speed(1.0)
 
     # Print start message
     # TODO (main challenge): add a line explaining what the Y button does
