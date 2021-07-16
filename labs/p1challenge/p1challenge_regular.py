@@ -216,7 +216,6 @@ def passCone():
             robotState = State.approaching
             counter = 0 
 
-
 def search():
     global speed, angle
     rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
