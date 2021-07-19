@@ -28,6 +28,8 @@ rc = racecar_core.create_racecar()
 # The (min, max) degrees to consider when measuring forward and rear distances
 FRONT_WINDOW = (-10, 10)
 REAR_WINDOW = (170, 190)
+STOP_DISTANCE = 120
+stopped = False
 
 ########################################################################################
 # Functions
@@ -61,20 +63,35 @@ def update():
     After start() is run, this function is run every frame until the back button
     is pressed
     """
-    # Use the triggers to control the car's speed
-    rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
-    lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
-    speed = rt - lt
+    
+    global stopped
 
     # Calculate the distance in front of and behind the car
     scan = rc.lidar.get_samples()
     _, forward_dist = rc_utils.get_lidar_closest_point(scan, FRONT_WINDOW)
     _, back_dist = rc_utils.get_lidar_closest_point(scan, REAR_WINDOW)
 
+    print(forward_dist)
+    
+
     # TODO (warmup): Prevent the car from hitting things in front or behind it.
     # Allow the user to override safety stop by holding the left or right bumper.
 
     # Use the left joystick to control the angle of the front wheels
+    if not rc.controller.is_down(rc.controller.Button.RB) and forward_dist < STOP_DISTANCE:
+        if rc.physics.get_angular_velocity()[2] > 0.05 :
+            speed = -1
+        else : speed = 0
+    elif not rc.controller.is_down(rc.controller.Button.RB) and back_dist < STOP_DISTANCE :
+        if rc.physics.get_angular_velocity()[2] > 0.05 :
+            speed = 1
+        else : speed = 0
+    else :
+        # Use the triggers to control the car's speed
+        rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+        lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+        speed = rt - lt
+        
     angle = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
 
     rc.drive.set_speed_angle(speed, angle)
@@ -89,7 +106,6 @@ def update():
 
     # Display the current LIDAR scan
     rc.display.show_lidar(scan)
-
 
 ########################################################################################
 # DO NOT MODIFY: Register start and update and begin execution
