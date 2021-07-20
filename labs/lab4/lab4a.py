@@ -29,7 +29,6 @@ rc = racecar_core.create_racecar()
 FRONT_WINDOW = (-10, 10)
 REAR_WINDOW = (170, 190)
 STOP_DISTANCE = 120
-stopped = False
 
 ########################################################################################
 # Functions
@@ -63,8 +62,6 @@ def update():
     After start() is run, this function is run every frame until the back button
     is pressed
     """
-    
-    global stopped
 
     # Calculate the distance in front of and behind the car
     scan = rc.lidar.get_samples()
