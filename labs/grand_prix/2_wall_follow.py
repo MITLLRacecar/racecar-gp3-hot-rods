@@ -6,6 +6,7 @@ Summer 2020
 Lab 4B - LIDAR Wall Following
 """
 
+
 ########################################################################################
 # Imports
 ########################################################################################
@@ -17,6 +18,7 @@ import numpy as np
 sys.path.insert(0, "../../library")
 import racecar_core
 import racecar_utils as rc_utils
+from enum import Enum
 
 ########################################################################################
 # Global variables
@@ -116,6 +118,11 @@ def update():
 
     print(f"angle degrees: {angle_degrees}, angle {angle}")
     rc.drive.set_speed_angle(speed, angle)
+
+
+    
+
+
 
 
 
