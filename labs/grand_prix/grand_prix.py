@@ -32,9 +32,6 @@ rc = racecar_core.create_racecar()
 
 
 def start():
-    """
-    This function is run once every time the start button is pressed
-    """
     # Have the car begin at a stop
     rc.drive.stop()
 
@@ -43,10 +40,6 @@ def start():
 
 
 def update():
-    """
-    After start() is run, this function is run every frame until the back button
-    is pressed
-    """
     pass
 
 
