@@ -205,15 +205,42 @@ def update():
                         angle = rc_utils.remap_range(purple_contour_center[1] - n, 0, rc.camera.get_width(), -1, 1)
 
                     angle = rc_utils.clamp(angle, -1, 1)
+                    speed = rc_utils.clamp(speed, 0, 0.5)
+                    rc.drive.set_speed_angle(speed, angle)
+                    rc.display.show_color_image(color_image)
+
+                    if purple_contour_center is None and orange_contour_center is None:
+                        if green_contour_center is not None:
+                            cur_state = State.green_line_following
+
+            if border.get_id() == 2:
+                update_contour()
+                rc.display.show_color_image(color_image)
+                # Choose an angle based on contour_center
+                # If we could not find a contour, keep the previous angle
+                if orange_contour_center is not None:
+                    image = rc_utils.crop(image, (rc.camera.get_width() // 2), rc.camera.get_width())
+                    angle = rc_utils.remap_range(orange_contour_center[1] - n, 0, rc.camera.get_width(), -1, 1)
+
+                    angle = rc_utils.clamp(angle, -1, 1)
                     speed = rc_utils.clamp(speed, 0, 1)
                     rc.drive.set_speed_angle(speed, angle)
                     rc.display.show_color_image(color_image)
 
+                    if purple_contour_center is not None:
+                        angle = rc_utils.remap_range(purple_contour_center[1] - n, 0, rc.camera.get_width(), -1, 1)
 
-        
+                    angle = rc_utils.clamp(angle, -1, 1)
+                    speed = rc_utils.clamp(speed, 0, 0.5)
+                    rc.drive.set_speed_angle(speed, angle)
+                    rc.display.show_color_image(color_image)
 
+                    if orange_contour_center is None and purple_contour_center is None:
+                        if green_contour_center is not None:
+                            cur_state = State.green_line_following
 
-    pass
+            
+pass
 
 
 ########################################################################################

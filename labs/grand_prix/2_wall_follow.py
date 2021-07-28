@@ -1,10 +1,9 @@
 """
 Copyright MIT and Harvey Mudd College
 MIT License
-Fall 2020
+Summer 2020
 
-Final Challenge - Grand Prix
-- Detect white AR tag to stop line following and begin wall following
+Lab 4B - LIDAR Wall Following
 """
 
 
@@ -19,7 +18,7 @@ import numpy as np
 sys.path.insert(0, "../../library")
 import racecar_core
 import racecar_utils as rc_utils
-fom enum import Enum
+from enum import Enum
 
 ########################################################################################
 # Global variables
@@ -28,52 +27,98 @@ fom enum import Enum
 rc = racecar_core.create_racecar()
 
 # Add any global variables here
-RIGHT_WINDOW = 45
-LEFT_WINDOW = 675
-FRONT_WINDOW = (-10, 10)
+windows = np.array(())
+start_degrees = -90
+total_degrees = 180
+total_windows = 10
+max_speed = 1
+timer = 0
 
 ########################################################################################
 # Functions
 ########################################################################################
 
-
 def start():
+    """
+    This function is run once every time the start button is pressed
+    """
     # Have the car begin at a stop
     rc.drive.stop()
-    rc.drive.set_max_speed(0.35)
+    global max_speed
+    rc.drive.set_max_speed(max_speed)
+
+    # Create scanning windows
+    global windows
+    global total_degrees
+    global total_windows
+    global start_degrees
+    window_size = round(total_degrees / total_windows)
+    for i in range(total_windows):
+        windows = np.append(windows, i * window_size)
+        windows = np.append(windows, (i+1) * window_size - 1)
+
+    windows = windows + start_degrees
+    windows = windows.reshape(-1, 2)
+    print(windows)
 
     # Print start message
-    print(">> Final Challenge - Grand Prix - wall_following")
+    print(">> Lab 4B - LIDAR Wall Following")
 
 
 def update():
     """
     After start() is run, this function is run every frame until the back button
-    is pressed
+    is pressed.
+
+    Use the "window" wall follower, but first, drive the car a bit closer.
     """
-    potential_colors = [
-    ((0, 0, 240), (255, 20, 255), "white")
-    ]
+    # TODO: Follow the wall to the right of the car without hitting anything.
 
-    color_image = rc.camera.get_color_image()
-    markers = rc_utils.get_ar_markers(color_image)
+    global windows # getting all the angle windows that the car will look at
+    global total_degrees
+    global total_windows
+    global start_degrees
+    global timer
+    speed = 1
+
+    # First grab lidar data
     scan = rc.lidar.get_samples()
-    right_dist = rc_utils.get_lidar_average_distance(scan, RIGHT_WINDOW, 10)
-    left_dist = rc_utils.get_lidar_average_distance(scan, LEFT_WINDOW, 10)
-    _, forward_dist = rc_utils.get_lidar_closest_point(scan, FRONT_WINDOW)
 
-    if markers:
-        for border in markers:
-            border.detect_colors(color_image, potential_colors)
-            if border.get_id() == 0:
-                angle = rc_utils.remap_range(right_dist - left_dist, -70, 70, -1, 1)
-                angle = rc_utils.clamp(angle, -1, 1)
-                speed = rc_utils.remap_range(forward_dist, 25, 80, 0.1, 1)
-                speed = rc_utils.clamp(speed, -1, 1)
-                rc.drive.set_speed_angle(speed, angle)
-                rc.display.show_lidar(scan)
+    # Get the (!!!average) closest distance for each window using lidar scan data
+    windows_distances = np.array(())
+    for window in windows:
+        _, window_distance = rc_utils.get_lidar_closest_point(scan, window)
+        windows_distances = np.append(windows_distances, window_distance)
     
-    pass
+    windows_distances = windows_distances.reshape(-1, 1)
+
+    # Turns to the angle
+    angle_index = np.argmax(windows_distances)
+    angle_degrees = np.mean(windows[angle_index])
+    angle = rc_utils.remap_range(angle_degrees, start_degrees, start_degrees + total_degrees - 1, -1, 1) * 2
+    angle = rc_utils.clamp(angle, -1, 1)
+
+    # Manual speed control
+    """
+    rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+    lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+    speed = rt - lt
+    """
+
+    # If the distance in front of you is very close, SLOW DOWN
+    _, forward_dist = rc_utils.get_lidar_closest_point(scan, (-2, 2))
+    if forward_dist < 250 * max_speed and abs(speed) == speed:
+        multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0 * max_speed, 0.7 * max_speed)
+        speed = multiplier * speed
+
+    timer += rc.get_delta_time()
+    if timer < 1.5:
+        angle = 0
+        speed = 1
+
+    print(f"angle degrees: {angle_degrees}, angle {angle}")
+    rc.drive.set_speed_angle(speed, angle)
+
 
     
 
