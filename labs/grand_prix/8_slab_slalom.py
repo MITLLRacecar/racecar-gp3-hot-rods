@@ -25,6 +25,8 @@ import racecar_utils as rc_utils
 rc = racecar_core.create_racecar()
 
 # Add any global variables here
+TOP_LEFT = (0,0)
+BOTTOM_RIGHT = (rc.camera.get_height(), rc.camera.get_width())
 
 ########################################################################################
 # Functions
@@ -36,10 +38,13 @@ def start():
     rc.drive.stop()
 
     # Print start message
-    print(">> Final Challenge - Grand Prix")
+    print(">> 8 - Slab Slalom")
+    rc.
 
 
 def update():
+    color_image = rc.camera.get_color_image()
+    cropped_image = rc_utils.crop(color_image, )
     pass
 
 
