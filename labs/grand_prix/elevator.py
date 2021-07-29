@@ -44,7 +44,6 @@ MIN_CONTOUR_AREA = 30
 
 class State(IntEnum):
     locate = 0
-    line_follow = 1
 
 cur_state: State = State.locate
 
@@ -95,7 +94,7 @@ def start(robot: racecar_core.Racecar):
     CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
 
     # Print start message
-    print(">> Final Challenge - Grand Prix")
+    print(">> GP Section 5: Elevator")
 
 
 def update():
@@ -122,30 +121,18 @@ def update():
       row_center = (int(abs(corners[1][0] + corners[2][0]) / 2), int(abs(corners[0][1] + corners[1][1]) / 2))
       center_distance = rc_utils.get_pixel_average_distance(depth_image, row_center)
 
-      if center_distance < 230:
+      if center_distance < 200:
         if item == "blue":
           speed = 1
           rc.drive.set_speed_angle(speed, angle)
-          if forward_dist < 100:
+          if forward_dist < 20:
             rc.drive.stop()
         else:
           speed = 0
-        print(contour)
-        if contour is not None:
-          # go back to line following
-          cur_state = State.line_follow
       else:
         # for now use right, left triggers for line following
-        speed = rt - lt
+        speed = 1
       rc.drive.set_speed_angle(speed, angle)
-  
-  if cur_state == State.line_follow:
-    if contour_center is not None:
-      angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1)
-    
-    # for now use right, left triggers for line following
-    speed = rt - lt
-    rc.drive.set_speed_angle(speed, angle)
   pass
 
 # id = 3, ori = 0
