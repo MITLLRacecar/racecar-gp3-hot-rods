@@ -110,8 +110,6 @@ def update():
   markers = rc_utils.get_ar_markers(color_image)
 
   _, forward_dist = rc_utils.get_lidar_closest_point(scan, FRONT_WINDOW)
-  rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
-  lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
 
   if cur_state == State.locate:
     for marker in markers:
