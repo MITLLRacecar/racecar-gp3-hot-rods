@@ -53,7 +53,7 @@ class Segment (IntEnum) :
     RampJump = 8
 
 # Changes initial segment
-currentSegment: Segment = Segment.LineFollow
+currentSegment: Segment = Segment.Elevator
 
 timer = 0
 
