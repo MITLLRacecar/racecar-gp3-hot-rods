@@ -13,6 +13,7 @@ Final Challenge - Grand Prix
 import sys
 import cv2 as cv
 import numpy as np
+import pprint
 
 sys.path.insert(0, "../../library")
 import racecar_core
@@ -24,9 +25,9 @@ import racecar_utils as rc_utils
 
 rc = racecar_core.create_racecar()
 #PURPLE = ((90, 120, 120), (120, 255, 255)) 
-PURPLE = ((130, 140, 0), (140, 255, 255))
-ORANGE = ((10, 50, 150), (30, 255, 255))
-CROP_FLOOR = ((rc.camera.get_height() - 170, 0), (rc.camera.get_height(), rc.camera.get_width()))
+PURPLE = ((120, 140, 0), (150, 255, 255))
+ORANGE = ((10, 150, 150), (30, 255, 255))
+CROP_FLOOR = ((480 - 250, 0), (480, 640))
 
 # Add any global variables here
 
@@ -73,13 +74,15 @@ def get_two_largest_contours(contours, min_area: int = 100):
 def start():
     # Have the car begin at a stop
     rc.drive.stop()
-
+    rc.drive.set_max_speed(0.75)
     # Print start message
-    print(">> Grand Prix Part 9: The Leap of Faith")
+    print(">> Grand Prix Part 3: The Bridge")
 
 
 def update():
 # Find the largest contour
+    color_priority = [PURPLE, ORANGE]
+    #color_priority = [ORANGE, PURPLE]
     image = rc.camera.get_color_image()
 
     # Get the AR markers BEFORE we crop it
@@ -88,16 +91,13 @@ def update():
     # Crop the image
     image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
-    orange_contours = np.array(rc_utils.find_contours(image, ORANGE[0], ORANGE[1]), dtype=object)
-    purple_contours = np.array(rc_utils.find_contours(image, PURPLE[0], PURPLE[1]), dtype=object)
-
-    print(orange_contours.shape, purple_contours.shape)
-
-    try:
-        contours = np.concatenate((orange_contours, purple_contours))
-    except:
-        print("FAILED")
-        print("ORANGE\n\n", orange_contours.shape, orange_contours, "PURPLE\n\n", purple_contours.shape, purple_contours)
+    color_index = -1
+    for color in color_priority:
+        color_index += 1
+        contours = rc_utils.find_contours(image, color[0], color[1])
+        if len(contours) != 0:
+            if len(contours) != 0 and len(sorted(contours, key=len, reverse=True)[0]) > 100:
+                break
 
     largest_contour_1, largest_contour_2 = get_two_largest_contours(contours)
     contour_centers = []
@@ -105,7 +105,6 @@ def update():
 
     # Draw it on the image
     for contour in [largest_contour_1, largest_contour_2]:
-        #print(image.shape)
         if type(contour) == np.ndarray:
             contour_centers.append(rc_utils.get_contour_center(contour))
             rc_utils.draw_contour(image, contour, (0,0,0))
@@ -115,18 +114,43 @@ def update():
 
     rc.display.show_color_image(image)
 
+    if color_index == 1: # normal color
+        if len(contour_centers) == 0:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 1:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 2:
+            contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
     
-    
-    
-    
-    # temp manual controls
-    manual_speed = 0
-    manual_angle = 0
+    elif color_index == 0:
+        print("TURN COLOR")
+        if len(contour_centers) == 0:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 1:
+            contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
+        elif len(contour_centers) == 2:
+            contour_centers_average_x = contour_centers[1][1]
 
-    manual_speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
-    manual_speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
-    manual_angle = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
-    rc.drive.set_speed_angle(manual_speed, manual_angle)
+
+    # temp manual controls
+    speed = 0
+
+    speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+    speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+
+    angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1)
+    if color_index == 1:
+        angle *= 1.5
+    elif color_index == 0:
+        if abs(angle) == angle:
+            angle = 1
+        else:
+            angle = -1
+        speed *= 0.1
+        print("BIG TURN")
+    angle = rc_utils.clamp(angle, -1, 1)
+
+    rc.drive.set_speed_angle(speed, angle)
     
 
 ########################################################################################

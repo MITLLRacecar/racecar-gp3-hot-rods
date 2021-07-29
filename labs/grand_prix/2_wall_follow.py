@@ -112,7 +112,7 @@ def update():
         speed = multiplier * speed
 
     timer += rc.get_delta_time()
-    if timer < 1.5:
+    if timer < 0.5:
         angle = 0
         speed = 1
 
