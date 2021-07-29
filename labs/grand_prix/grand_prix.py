@@ -114,9 +114,11 @@ def detectARMarkers() :
         bottom_right = marker.get_corners()[2]
         center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right))) 
         distance = depthImage[int(center[0])][int(center[1])]
+
+        distanceOffset = 200 if id == Segment.Elevator else 0
         
         # Update current segment
-        if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE:
+        if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
             currentSegment = id
             rc.drive.stop()
             
