@@ -23,7 +23,7 @@ from enum import IntEnum
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 
 # Add any global variables here
 TARGET_SPEED = 3
@@ -73,7 +73,9 @@ def update_contours():
     else:
         return True
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc
+    rc = robot
     # Have the car begin at a stop
     rc.drive.stop()
 
@@ -182,6 +184,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()

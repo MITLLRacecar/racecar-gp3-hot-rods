@@ -23,8 +23,6 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
-#PURPLE = ((90, 120, 120), (120, 255, 255)) 
 PURPLE = ((120, 140, 0), (150, 255, 255))
 ORANGE = ((10, 150, 150), (30, 255, 255))
 CROP_FLOOR = ((480 - 250, 0), (480, 640))
@@ -71,8 +69,10 @@ def get_two_largest_contours(contours, min_area: int = 100):
         print("No orange or purple contours detected")
         return None, None
 
-def start():
-    # Have the car begin at a stop
+def start(robot: racecar_core.Racecar):
+    global rc
+    rc = robot
+
     rc.drive.stop()
     rc.drive.set_max_speed(0.75)
     # Print start message
@@ -80,7 +80,7 @@ def start():
 
 
 def update():
-# Find the largest contour
+    # Find the largest contour
     color_priority = [PURPLE, ORANGE]
     #color_priority = [ORANGE, PURPLE]
     image = rc.camera.get_color_image()
@@ -157,6 +157,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#    rc.set_start_update(start, update, None)
+#    rc.go()

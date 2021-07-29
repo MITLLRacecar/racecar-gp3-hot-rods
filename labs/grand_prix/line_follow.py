@@ -24,14 +24,14 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+# rc = racecar_core.create_racecar()
 
 # >> Constants
 # The smallest contour we will recognize as a valid contour
 MIN_CONTOUR_AREA = 30
 
 # A crop window for the floor directly in front of the car
-CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
+CROP_FLOOR = None
 
 # Colors, stored as a pair (hsv_min, hsv_max)
 BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
@@ -112,17 +112,21 @@ def update_contour():
         # rc.display.show_color_image(image)
 
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc
+    rc = robot
+
     """
     This function is run once every time the start button is pressed
     """
     global speed
     global angle
+    global CROP_FLOOR
 
     # Initialize variables
     speed = 0
     angle = 0
-
+    CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
     # Set initial driving speed and angle
     rc.drive.set_speed_angle(speed, angle)
 
@@ -214,6 +218,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update)#, update_slow)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update)#, update_slow)
+#     rc.go()

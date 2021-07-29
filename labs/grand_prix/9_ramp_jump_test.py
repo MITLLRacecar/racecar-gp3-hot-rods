@@ -27,7 +27,7 @@ BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
 ORANGE = ((0, 100, 150), (40, 255, 255))  # THE HSV threshhold for the color orange
 CROP_FLOOR = (
     (480 - 220, 0),
-    (480, 640),
+    (480, 6403),
 )
 
 # Add any global variables here

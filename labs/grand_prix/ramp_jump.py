@@ -1,4 +1,4 @@
-333333333333333333333333333333333333333"""
+"""
 Copyright MIT and Harvey Mudd College
 MIT License
 Fall 2020
@@ -22,7 +22,7 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
 ORANGE = ((0, 100, 150), (40, 255, 255))  # THE HSV threshhold for the color orange
 CROP_FLOOR = (
@@ -73,7 +73,12 @@ def get_two_largest_contours(contours, min_area: int = 30):
         return None, None
 
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc, CROP_FLOOR
+    rc = robot
+
+    CROP_FLOOR = ((rc.camera.get_height() - 250, 0), (rc.camera.get_height(), rc.camera.get_width()))
+
     # Have the car begin at a stop
     rc.drive.stop()
     rc.drive.set_max_speed(1)
@@ -161,6 +166,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()

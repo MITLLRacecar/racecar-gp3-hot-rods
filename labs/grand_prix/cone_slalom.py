@@ -25,9 +25,6 @@ from enum import IntEnum
 ########################################################################################
 # Global variables
 ########################################################################################
-
-rc = racecar_core.create_racecar()
-
 class State(IntEnum) :
     approaching = 0 # Go around red cone
     passing = 1 # Go around blue cone
@@ -42,6 +39,8 @@ robotState = State.searching
 coneVisible = None
 coneApproaching = None
 canPassCone = False
+
+rc: racecar_core.Racecar = None
 
 # The HSV ranges (min, max)
 RED = ((165, 160, 180), (179, 200, 255))
@@ -58,7 +57,7 @@ PASSING_ANGLE_RANGE = (60, 75)
 depthImage = None
 colorImage = None
 lidarScan = None
-waypointCenter = (rc.camera.get_height() / 2, rc.camera.get_width() / 2)
+waypointCenter = None # (rc.camera.get_height() / 2, rc.camera.get_width() / 2)
 coneCenter = None
 speed = 0
 angle = 0
@@ -72,11 +71,15 @@ lidarConePos = (0,0)
 # Functions
 ########################################################################################
 
-
-def start():
+def start(robot: racecar_core.Racecar):
     """
     This function is run once every time the start button is pressed
     """
+    global rc, waypointCenter
+    rc = robot
+
+    waypointCenter = (rc.camera.get_height() / 2, rc.camera.get_width() / 2)
+    
     # Have the car begin at a stop
     rc.drive.stop()
 
@@ -100,10 +103,6 @@ def findCone():
         else: redArea = rc_utils.get_contour_area(redLargestContour)
 
         closestCone = None
-        # if redArea == 0 and blueArea == 0 and robotState != State.passing : 
-        #     robotState = State.searching
-        #     coneVisible = None
-        #     return
 
         if robotState != State.approaching :
             if blueArea > redArea:
@@ -127,7 +126,7 @@ def findCone():
             
         lidarConePos = rc_utils.get_lidar_closest_point(lidarScan, window)
         # print(rc_utils.get_lidar_average_distance(lidarScan,(lidarConePos[0] - 1) % 360, (lidarConePos[0] + 1) % 360))
-        rc.display.show_lidar(lidarScan, 128, 1000, [lidarConePos])
+        # rc.display.show_lidar(lidarScan, 128, 1000, [lidarConePos])
         
 def calculateWaypoint():
     global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, counter, finishLine, distanceToCone
@@ -142,7 +141,7 @@ def calculateWaypoint():
 
         # Clamp to prevent viewport overflow and integer casting overflow
         waypointCenter = (rc_utils.clamp(coneCenter[0], 0, rc.camera.get_height() - 1), rc_utils.clamp(int(rc_utils.clamp(coneCenter[1] + (pointDirection * x), 0, sys.maxsize)), 0, rc.camera.get_width() - 1))
-    #     print("Found " + str(coneVisible)[5:] + " waypoint at: " + str(waypointCenter))
+        # print("Found " + str(coneVisible)[5:] + " waypoint at: " + str(waypointCenter))
     else :
         # print("Could not find waypoint")
         waypointCenter = None
@@ -178,13 +177,13 @@ def update():
 
     if coneCounter == 9 and robotState == State.approaching : robotState = State.stopping
     
-    print("Robot Status: " + str(robotState)[6:])
+    # print("Robot Status: " + str(robotState)[6:])
     # print(lidarConePos)
     # if coneCenter is not None : print(depthImage[coneCenter[0]][coneCenter[1]])
 
     if coneCenter is not None : rc_utils.draw_circle(colorImage, coneCenter)
     if waypointCenter is not None : rc_utils.draw_circle(colorImage, waypointCenter)
-    # rc.display.show_color_image(colorImage) 
+    rc.display.show_color_image(colorImage) 
 
 def detectMarkers() :
     global robotState, coneCounter
@@ -268,6 +267,6 @@ def angleController():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()
