@@ -161,7 +161,7 @@ def update():
 
     angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1)
     if color_index == 1:
-        angle *= 1.5
+        angle *= 2
     elif color_index == 0:
         if abs(angle) == angle:
             angle = 1
@@ -169,6 +169,8 @@ def update():
             angle = -1
         speed *= 0.1
         print("BIG TURN")
+
+
     angle = rc_utils.clamp(angle, -1, 1)
 
     rc.drive.set_speed_angle(speed, angle)
