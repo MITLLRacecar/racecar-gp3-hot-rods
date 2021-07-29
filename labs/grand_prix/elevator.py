@@ -23,7 +23,7 @@ from enum import IntEnum
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 
 # Add any global variables here
 RED = ((170, 50, 50), (10, 255, 255), "red")
@@ -39,7 +39,7 @@ contour = None
 closest_distance = 0
 contour_area = 0
 contour_center = (0,0)
-CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
+CROP_FLOOR = None
 MIN_CONTOUR_AREA = 30
 
 class State(IntEnum):
@@ -85,9 +85,14 @@ def update_contour():
         # Display the image to the screen
         rc.display.show_color_image(image)
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc, CROP_FLOOR
+    rc = robot
+
     # Have the car begin at a stop
     rc.drive.stop()
+
+    CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
 
     # Print start message
     print(">> Final Challenge - Grand Prix")
@@ -149,6 +154,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()

@@ -22,24 +22,28 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 
 # Add any global variables here
 TOP_LEFT = (0,0)
-BOTTOM_RIGHT = (rc.camera.get_height(), rc.camera.get_width())
+BOTTOM_RIGHT = None
 
 ########################################################################################
 # Functions
 ########################################################################################
 
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc, BOTTOM_RIGHT
+    rc = robot
+
+    BOTTOM_RIGHT = (rc.camera.get_height(), rc.camera.get_width())
+
     # Have the car begin at a stop
     rc.drive.stop()
 
     # Print start message
     print(">> 8 - Slab Slalom")
-    rc.
 
 
 def update():
@@ -52,6 +56,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()

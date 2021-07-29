@@ -22,9 +22,9 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
-CROP_FLOOR = ((rc.camera.get_height() - 250, 0), (rc.camera.get_height(), rc.camera.get_width()))
+CROP_FLOOR = None
 
 # Add any global variables here
 
@@ -101,7 +101,12 @@ def get_two_largest_contours(contours, min_area: int = 30):
 def get_contours(color_image):
     contours = rc_utils.find_contours(image, BLUE[0], BLUE[1])
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc, CROP_FLOOR
+    rc = robot
+
+    CROP_FLOOR = ((rc.camera.get_height() - 250, 0), (rc.camera.get_height(), rc.camera.get_width()))
+
     # Have the car begin at a stop
     rc.drive.stop()
 
@@ -149,6 +154,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()

@@ -23,7 +23,7 @@ from enum import Enum
 # Global variables
 ########################################################################################
 
-rc = racecar_core.create_racecar()
+#rc = racecar_core.create_racecar()
 
 class states(Enum):
     stopped = 0
@@ -42,7 +42,10 @@ timer = 0
 ########################################################################################
 
 
-def start():
+def start(robot: racecar_core.Racecar):
+    global rc
+    rc = robot
+
     # Have the car begin at a stop
     rc.drive.set_max_speed(0.75)
     rc.drive.stop()
@@ -126,6 +129,6 @@ def update():
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
-if __name__ == "__main__":
-    rc.set_start_update(start, update, None)
-    rc.go()
+# if __name__ == "__main__":
+#     rc.set_start_update(start, update, None)
+#     rc.go()
