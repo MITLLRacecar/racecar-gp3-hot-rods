@@ -119,11 +119,11 @@ def update():
       row_center = (int(abs(corners[1][0] + corners[2][0]) / 2), int(abs(corners[0][1] + corners[1][1]) / 2))
       center_distance = rc_utils.get_pixel_average_distance(depth_image, row_center)
 
-      if center_distance < 200:
+      if center_distance < 350:
         if item == "blue":
           speed = 1
           rc.drive.set_speed_angle(speed, angle)
-          if forward_dist < 20:
+          if forward_dist < 35:
             rc.drive.stop()
         else:
           speed = 0
