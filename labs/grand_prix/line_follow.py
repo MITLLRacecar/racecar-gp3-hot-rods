@@ -111,7 +111,6 @@ def update_contour():
         # Display the image to the screen
         # rc.display.show_color_image(image)
 
-
 def start(robot: racecar_core.Racecar):
     global rc
     rc = robot
@@ -132,23 +131,7 @@ def start(robot: racecar_core.Racecar):
 
     # Set update_slow to refresh every half second
     rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(0.75)
-
-    # Print start message
-    print(
-        ">> Lab 2A - Color Image Line Following\n"
-        "\n"
-        "Controls:\n"
-        "    Right trigger = accelerate forward\n"
-        "    Left trigger = accelerate backward\n"
-        "    RB = print area and center of contour\n"
-        "    LB = print speed and angle of the car\n"
-        "    A button = add green to the color priority sequence\n"
-        "    B button = add red to the color priority sequence\n"
-        "    X button = add blue to the color priority sequence\n"
-        "    Y button = reset color priority sequence\n"
-    )
-
+    rc.drive.set_max_speed(0.4)
 
 def remap_range(
     val: float,
@@ -197,7 +180,7 @@ def update():
     if contour_center is not None:
         # Current implementation: bang-bang control (very choppy)
         # TODO (warmup): Implement a smoother way to follow the line
-        angle = remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1)
+        angle = rc_utils.clamp(2 * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
 
     speed = 1
     rc.drive.set_speed_angle(speed, angle)
