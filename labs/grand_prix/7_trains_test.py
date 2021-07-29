@@ -40,7 +40,7 @@ def start():
 	rc.drive.stop()
 
 	# Print start message
-	print(">> Grand Prix Part 7: Passing Through Trains")
+	print(">> Passing Through Trains")
 
 def update():
 	"""

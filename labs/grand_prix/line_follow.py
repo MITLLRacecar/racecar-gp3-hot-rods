@@ -133,6 +133,8 @@ def start(robot: racecar_core.Racecar):
     rc.set_update_slow_time(0.5)
     rc.drive.set_max_speed(0.4)
 
+    print(">> Line Following")
+
 def remap_range(
     val: float,
     old_min: float,

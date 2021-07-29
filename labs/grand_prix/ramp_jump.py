@@ -84,7 +84,7 @@ def start(robot: racecar_core.Racecar):
     rc.drive.set_max_speed(1)
 
     # Print start message
-    print(">> Grand Prix Part 9: The Leap of Faith")
+    print(">> The Leap of Faith")
 
 
 def update():

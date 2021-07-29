@@ -94,7 +94,7 @@ def start(robot: racecar_core.Racecar):
     rc.drive.stop()
 
     # Print start message
-    print(">> GP Section 6: Cone Slaloming")
+    print(">> Cone Slaloming")
 
 def findCone():
     global colorImage, depthImage, waypointCenter, coneCenter, coneVisible, robotState, lidarScan, lidarConePos

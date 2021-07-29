@@ -52,7 +52,7 @@ def start(robot: racecar_core.Racecar):
     rc.drive.stop()
 
     # Print start message
-    print(">> 8 - Slab Slalom")
+    print(">> Slab Slalom")
 
 def update():
     global color_image, depth_image
