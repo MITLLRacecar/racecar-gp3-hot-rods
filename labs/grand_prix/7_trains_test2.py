@@ -36,7 +36,7 @@ def start():
 	rc.drive.stop()
 
 	# Print start message
-	print(">> Final Challenge - Grand Prix")
+	print(">> Passing Through Trains")
 
 
 def update():

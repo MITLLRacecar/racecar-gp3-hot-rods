@@ -94,7 +94,7 @@ def start(robot: racecar_core.Racecar):
     CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
 
     # Print start message
-    print(">> GP Section 5: Elevator")
+    print(">> Elevator")
 
 
 def update():

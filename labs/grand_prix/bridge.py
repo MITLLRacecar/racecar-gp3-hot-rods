@@ -23,9 +23,11 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-PURPLE = ((120, 140, 0), (150, 255, 255))
-ORANGE = ((10, 150, 150), (30, 255, 255))
+PURPLE = ((120, 140, 0), (150, 255, 255), "purple")
+ORANGE = ((10, 150, 150), (30, 255, 255), "orange")
+ORANGE_AR = ((10, 100, 60), (30, 255, 255), "orange") # different threshold for AR since it is in the shade
 CROP_FLOOR = ((480 - 250, 0), (480, 640))
+color_priority = []
 
 # Add any global variables here
 
@@ -71,18 +73,35 @@ def get_two_largest_contours(contours, min_area: int = 100):
 
 def start(robot: racecar_core.Racecar):
     global rc
+    global color_priority
     rc = robot
 
+    # Detect AR code to determine color
+    image = rc.camera.get_color_image()
+    markers = rc_utils.get_ar_markers(image)
+    if len(markers) > 0:
+        marker = markers[0]
+        marker.detect_colors(image, [PURPLE, ORANGE_AR])
+        marker_color = marker.get_color()
+        print(marker_color)
+
+    if marker_color == "orange":
+        color_priority = [PURPLE, ORANGE] # color priority for orange ar code
+    elif marker_color == "purple":
+        color_priority = [ORANGE, PURPLE]
+
+    # Drive parameters
     rc.drive.stop()
-    rc.drive.set_max_speed(0.75)
+    rc.drive.set_max_speed(0.5)
+
     # Print start message
-    print(">> Grand Prix Part 3: The Bridge")
+    print(">> The Bridge")
 
 
 def update():
+    global color_priority
+
     # Find the largest contour
-    color_priority = [PURPLE, ORANGE]
-    #color_priority = [ORANGE, PURPLE]
     image = rc.camera.get_color_image()
 
     # Get the AR markers BEFORE we crop it
@@ -133,14 +152,16 @@ def update():
 
 
     # temp manual controls
+    """
     speed = 0
-
     speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
     speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+    """
+    speed = 1
 
     angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1)
     if color_index == 1:
-        angle *= 1.5
+        angle *= 2
     elif color_index == 0:
         if abs(angle) == angle:
             angle = 1
@@ -148,6 +169,8 @@ def update():
             angle = -1
         speed *= 0.1
         print("BIG TURN")
+
+
     angle = rc_utils.clamp(angle, -1, 1)
 
     rc.drive.set_speed_angle(speed, angle)

@@ -79,7 +79,7 @@ def start():
     rc.drive.set_max_speed(1)
 
     # Print start message
-    print(">> Grand Prix Part 9: The Leap of Faith")
+    print(">> Ramp Jump")
 
 
 def update():
