@@ -53,7 +53,7 @@ class Segment (IntEnum) :
     RampJump = 8
 
 # Changes initial segment
-currentSegment: Segment = Segment.Elevator
+currentSegment: Segment = Segment.LineFollow
 
 timer = 0
 
@@ -125,7 +125,7 @@ def detectARMarkers() :
 
         # Update current segment
         #if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE:
-        if currentSegment != id and id in Segment._value2member_map_ and area > 1800:
+        if currentSegment != id and id in Segment._value2member_map_ and area > 2000:
             currentSegment = id
             rc.drive.stop()
 
