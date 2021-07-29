@@ -2,7 +2,6 @@
 Copyright MIT and Harvey Mudd College
 MIT License
 Fall 2020
-
 Final Challenge - Grand Prix
 """
 
@@ -88,15 +87,11 @@ def start():
     SegmentMappings[currentSegment].start(rc)
 
 def update():
-    global currentSegment
     detectARMarkers()
     if currentSegment is not Segment.LineFollow : detectLineFollow()
 
     # Update selected segment
     SegmentMappings[currentSegment].update()
-
-    if rc.controller.was_pressed((rc.controller.Button.A)) : 
-        print("Current Segment: " + str(SegmentMappings[currentSegment]))
 
     if DEBUG : rc.drive.set_speed_angle(
     rc.controller.get_trigger(rc.controller.Trigger.RIGHT) - 
@@ -108,13 +103,10 @@ def detectARMarkers() :
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
-    colorImage = rc_utils.crop(colorImage, (0, 100), (480, 380))
     markers = rc_utils.get_ar_markers(colorImage)
 
     if len(markers) > 0: 
         marker = markers[0]
-        corners = marker.get_corners()
-        area = (corners[0][0] - corners[2][0]) * (corners[0][1] - corners[2][1])
         id = marker.get_id()
 
         # Get distance to marker's center
@@ -123,11 +115,15 @@ def detectARMarkers() :
         center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right))) 
         distance = depthImage[int(center[0])][int(center[1])]
 
+        distanceOffset = 200 if id == Segment.Elevator else 0
+        
         # Update current segment
-        #if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE:
-        if currentSegment != id and id in Segment._value2member_map_ and area > 2000:
+        if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
             currentSegment = id
             rc.drive.stop()
+            
+            if rc.controller.was_pressed((rc.controller.Button.A)) : 
+                print("Current Segment: " + str(currentSegment))
 
             # Start selected segment
             timer = 0
@@ -145,7 +141,7 @@ def detectLineFollow() :
     contours = rc_utils.find_contours(cropped_image, GREEN[0], GREEN[1])
     contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
 
-    if contour is not None : print("Contour area: " + str(rc_utils.get_contour_area(contour)))
+    # if contour is not None : print("Contour area: " + str(rc_utils.get_contour_area(contour)))
     print(timer)
 
     if timer >= MIN_STATE_TIMER and contour is not None:
