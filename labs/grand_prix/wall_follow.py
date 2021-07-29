@@ -31,7 +31,7 @@ windows = np.array(())
 start_degrees = -90
 total_degrees = 180
 total_windows = 10
-max_speed = 1
+max_speed = 0.8
 timer = 0
 
 ########################################################################################
