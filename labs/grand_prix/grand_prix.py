@@ -105,6 +105,8 @@ def detectARMarkers() :
     depthImage = rc.camera.get_depth_image()
     markers = rc_utils.get_ar_markers(colorImage)
 
+    if rc.controller.was_pressed((rc.controller.Button.A)) : print("Current Segment: " + str(currentSegment))
+
     if len(markers) > 0: 
         marker = markers[0]
         id = marker.get_id()
@@ -121,9 +123,6 @@ def detectARMarkers() :
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
             currentSegment = id
             rc.drive.stop()
-            
-            if rc.controller.was_pressed((rc.controller.Button.A)) : 
-                print("Current Segment: " + str(currentSegment))
 
             # Start selected segment
             timer = 0
