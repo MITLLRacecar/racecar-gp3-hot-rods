@@ -36,8 +36,7 @@ from enum import IntEnum
 rc = racecar_core.create_racecar()
 
 MARKER_DETECTION_DISTANCE = 100
-MIN_STATE_TIMER = 2
-
+MIN_STATE_TIMER = 4
 # Enables manual robot control override
 DEBUG = False
 
@@ -54,7 +53,9 @@ class Segment (IntEnum) :
     RampJump = 8
 
 # Changes initial segment
-currentSegment: Segment = Segment.LineFollow
+currentSegment: Segment = Segment.ConeSlalom
+
+timer = 0
 
 # Maps IDs to scripts
 SegmentMappings = {
@@ -88,7 +89,7 @@ def start():
 
 def update():
     detectARMarkers()
-    tick()
+    if currentSegment is not Segment.LineFollow : detectLineFollow()
 
     # Update selected segment
     SegmentMappings[currentSegment].update()
@@ -124,23 +125,27 @@ def detectARMarkers() :
                 print("Current Segment: " + str(currentSegment))
 
             # Start selected segment
-            SegmentMappings[currentSegment].start(rc)
             timer = 0
+            SegmentMappings[currentSegment].start(rc)
 
-def tick() :
+def detectLineFollow() :
     global timer, currentSegment
     timer += rc.get_delta_time()
 
     CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
     GREEN = ((60, 50, 50), (80, 255, 255))
-    MIN_CONTOUR_AREA = 40
+    MIN_CONTOUR_AREA = 1000
     cropped_image = rc_utils.crop(colorImage, CROP_FLOOR[0], CROP_FLOOR[1])
 
     contours = rc_utils.find_contours(cropped_image, GREEN[0], GREEN[1])
     contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
 
+    if contour is not None : print("Contour area: " + str(rc_utils.get_contour_area(contour)))
+    print(timer)
+
     if timer >= MIN_STATE_TIMER and contour is not None:
         currentSegment = Segment.LineFollow 
+        print("Following line")
         SegmentMappings[currentSegment].start(rc)
 
 ########################################################################################
