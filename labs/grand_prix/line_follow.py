@@ -29,6 +29,7 @@ import racecar_utils as rc_utils
 # >> Constants
 # The smallest contour we will recognize as a valid contour
 MIN_CONTOUR_AREA = 30
+MAX_SPEED = 0.45
 
 # A crop window for the floor directly in front of the car
 CROP_FLOOR = None
@@ -131,7 +132,7 @@ def start(robot: racecar_core.Racecar):
 
     # Set update_slow to refresh every half second
     rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(0.4)
+    rc.drive.set_max_speed(MAX_SPEED)
 
     print(">> Line Following")
 
@@ -182,7 +183,8 @@ def update():
     if contour_center is not None:
         # Current implementation: bang-bang control (very choppy)
         # TODO (warmup): Implement a smoother way to follow the line
-        angle = rc_utils.clamp(2 * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
+        kP = 2.0
+        angle = rc_utils.clamp(kP * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
 
     speed = 1
     rc.drive.set_speed_angle(speed, angle)
