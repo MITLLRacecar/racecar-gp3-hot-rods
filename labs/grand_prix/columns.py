@@ -84,93 +84,93 @@ def start(robot: racecar_core.Racecar):
 
 
 def update():
-  global speed
-  global angle
-  global cur_state
-  global marker_id
-  global orientation_value
+    global speed
+    global angle
+    global cur_state
+    global marker_id
+    global orientation_value
 
-  color_image = rc.camera.get_color_image()
-  scan = rc.lidar.get_samples()
-  markers = rc_utils.get_ar_markers(color_image)
-  # speed = speedController()
-  rc.drive.set_speed_angle(speed, angle)
+    color_image = rc.camera.get_color_image()
+    scan = rc.lidar.get_samples()
+    markers = rc_utils.get_ar_markers(color_image)
+    # speed = speedController()
+    rc.drive.set_speed_angle(speed, angle)
 
-  if cur_state == State.locate:
-    print("state locate")
-    # get marker and orientation
-    for marker in markers:
-      marker_orientation = marker.get_orientation()
-      orientation_value = marker_orientation.value
-      marker_id = marker.get_id()
+    if cur_state == State.locate:
+        print("state locate")
+        # get marker and orientation
+        for marker in markers:
+            marker_orientation = marker.get_orientation()
+            orientation_value = marker_orientation.value
+            marker_id = marker.get_id()
+        
+        if marker_id == 199:
+            print("hey")
+            pillar = update_contours()
+            if orientation_value == 1:
+                if not pillar:
+                    angle = -0.9
+                    speed = 1
+                elif pillar:
+                    speed = 1
+                    angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -1, .2)
+                
+                if closest_distance < 100:
+                    timer = 0
+                    cur_state = State.turn_left
+            elif orientation_value == 3:
+                if not pillar:
+                    angle = 0.9
+                    speed = 1
+                elif pillar:
+                    speed = 1
+                    angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -0.2, 1)
+                  
+                    if closest_distance < 100:
+                        timer = 0
+                        cur_state = State.turn_right
+        else:
+            angle = 0
+            rc.drive.set_speed_angle(speed, angle)
     
-    if marker_id == 199:
-      print("hey")
-      pillar = update_contours()
-      if orientation_value == 1:
+    if cur_state == State.turn_left:
+        print("state left")
+        pillar = update_contours()
+        speed = 1
+        
         if not pillar:
-          angle = -0.9
-          speed = 1
-        elif pillar:
-          speed = 1
-          angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -1, .2)
-          
-          if closest_distance < 100:
-            timer = 0
-            cur_state = State.turn_left
-      elif orientation_value == 3:
+            timer += rc.get_delta_time()
+            angle = 0
+            
+            if timer > .3:
+                timer = 0
+                cur_state = State.approach_blue
+        else:
+            if pillar:
+                angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -1, -.4)
+    
+    if cur_state == State.turn_right:
+        print("state right")
+        pillar = update_contours()
+        speed = 1
+        
         if not pillar:
-          angle = 0.9
-          speed = 1
-        elif pillar:
-          speed = 1
-          angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -0.2, 1)
-          
-          if closest_distance < 100:
-            timer = 0
-            cur_state = State.turn_right
-    else:
-      angle = 0
-      rc.drive.set_speed_angle(speed, angle)
-  
-  if cur_state == State.turn_left:
-    print("state left")
-    pillar = update_contours()
-    speed = 1
-    
-    if not pillar:
-      timer += rc.get_delta_time()
-      angle = 0
-      
-      if timer > .3:
-        timer = 0
-        cur_state = State.approach_blue
-    else:
-      if pillar:
-        angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), -1, -.4)
-  
-  if cur_state == State.turn_right:
-    print("state right")
-    pillar = update_contours()
-    speed = 1
-    
-    if not pillar:
-      timer += rc.get_delta_time()
-      angle = 0
-      
-      if timer > .3:
-        timer = 0
-        cur_state = State.approach_blue
-    else:
-      if pillar:
-        angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), .4, 1)
+            timer += rc.get_delta_time()
+            angle = 0
+            
+            if timer > .3:
+                timer = 0
+                cur_state = State.approach_blue
+        else:
+            if pillar:
+                angle = rc_utils.remap_range(contour_center[1], 0, rc.camera.get_width(), .4, 1)
 
-  
-  print("id: ", marker_id)
-  print("orientation: ", orientation_value)
+    
+    print("id: ", marker_id)
+    print("orientation: ", orientation_value)
 
-  # id = 199, left = 1, right = 3
-  pass
+    # id = 199, left = 1, right = 3
+    pass
 
 # def speedController():
 #   kP = 1
