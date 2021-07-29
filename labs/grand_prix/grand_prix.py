@@ -141,7 +141,7 @@ def detectLineFollow() :
     contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
 
     # if contour is not None : print("Contour area: " + str(rc_utils.get_contour_area(contour)))
-    print(timer)
+    # print(timer)
 
     if timer >= MIN_STATE_TIMER and contour is not None:
         currentSegment = Segment.LineFollow 
