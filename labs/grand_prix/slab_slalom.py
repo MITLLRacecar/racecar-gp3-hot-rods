@@ -25,7 +25,7 @@ import racecar_utils as rc_utils
 #rc = racecar_core.create_racecar()
 
 # Add any global variables here
-TOP_LEFT = (0,0)
+TOP_LEFT = None
 BOTTOM_RIGHT = None
 
 ########################################################################################
@@ -37,6 +37,7 @@ def start(robot: racecar_core.Racecar):
     global rc, BOTTOM_RIGHT
     rc = robot
 
+    TOP_LEFT = (rc.camera.get_height() // 2, rc.camera.get_width())
     BOTTOM_RIGHT = (rc.camera.get_height(), rc.camera.get_width())
 
     # Have the car begin at a stop

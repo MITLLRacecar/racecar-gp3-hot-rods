@@ -37,8 +37,9 @@ rc = racecar_core.create_racecar()
 MARKER_DETECTION_DISTANCE = 100
 DEBUG = False
 
+# Marker IDs for each segment
 class Segment (IntEnum) :
-    LineFollow = -1,
+    LineFollow = -1, 
     WallFollow = 0,
     Bridge = 1,
     Columns = 199,
@@ -48,8 +49,10 @@ class Segment (IntEnum) :
     SlabSlalom = 6,
     RampJump = 8
 
+# Changes initial segment
 currentSegment: Segment = Segment.LineFollow
 
+# Maps IDs to scripts
 SegmentMappings = {
     Segment.LineFollow: lineFollow,
     Segment.WallFollow: wallFollow,
@@ -90,7 +93,7 @@ def update():
 
 def detectARMarkers() :
     global currentSegment
-    
+
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
     markers = rc_utils.get_ar_markers(colorImage)
@@ -99,18 +102,17 @@ def detectARMarkers() :
         marker = markers[0]
         id = marker.get_id()
 
+        # Get distance to marker's center
         top_left = marker.get_corners()[0]
         bottom_right = marker.get_corners()[2]
-        center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right)))
-        
+        center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right))) 
         distance = depthImage[int(center[0])][int(center[1])]
         
         # Update current segment
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE:
             currentSegment = id
-            print("Marker detected: " + str(id))
-
             rc.drive.stop()
+            # print("Marker detected: " + str(id))
 
             # Start selected segment
             SegmentMappings[currentSegment].start(rc)
