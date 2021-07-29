@@ -36,7 +36,7 @@ from enum import IntEnum
 rc = racecar_core.create_racecar()
 
 MARKER_DETECTION_DISTANCE = 100
-MIN_STATE_TIMER = 2
+MIN_STATE_TIMER = 6
 
 # Enables manual robot control override
 DEBUG = False
@@ -88,7 +88,9 @@ def start():
 
 def update():
     detectARMarkers()
-    tick()
+
+    if str(currentSegment) != "Segment.LineFollow":
+        tick()
 
     # Update selected segment
     SegmentMappings[currentSegment].update()
@@ -133,7 +135,7 @@ def tick() :
 
     CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
     GREEN = ((60, 50, 50), (80, 255, 255))
-    MIN_CONTOUR_AREA = 40
+    MIN_CONTOUR_AREA = 150
     cropped_image = rc_utils.crop(colorImage, CROP_FLOOR[0], CROP_FLOOR[1])
 
     contours = rc_utils.find_contours(cropped_image, GREEN[0], GREEN[1])

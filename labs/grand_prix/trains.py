@@ -51,7 +51,7 @@ def start(robot: racecar_core.Racecar):
     rc.drive.stop()
 
     # Print start message
-    print(">> Grand Prix Part 7: Passing Through Trains")
+    print(">> Passing Through Trains")
 
 def update():
 

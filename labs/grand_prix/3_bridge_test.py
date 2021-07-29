@@ -76,7 +76,7 @@ def start():
     rc.drive.stop()
     rc.drive.set_max_speed(0.75)
     # Print start message
-    print(">> Grand Prix Part 3: The Bridge")
+    print(">> The Bridge")
 
 
 def update():

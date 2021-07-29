@@ -80,7 +80,7 @@ def start(robot: racecar_core.Racecar):
     rc.drive.stop()
 
     # Print start message
-    print(">> Final Challenge - Grand Prix")
+    print(">> Column Turns")
 
 
 def update():

@@ -64,7 +64,7 @@ def start(robot: racecar_core.Racecar):
     print(windows)
 
     # Print start message
-    print("Wall following")
+    print(">> Wall Following")
 
 def update():
     # Follow the wall to the right of the car without hitting anything.
