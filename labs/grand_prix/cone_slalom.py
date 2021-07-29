@@ -51,7 +51,7 @@ WHITE = ((90, 30, 250), (110, 45, 255))
 
 MAX_SPEED = 0.5
 MIN_CONTOUR_AREA = 550
-MIN_PASSING_DISTANCE = 250
+MIN_PASSING_DISTANCE = 110
 PASSING_ANGLE_RANGE = (60, 75)
 
 depthImage = None
@@ -75,7 +75,7 @@ def start(robot: racecar_core.Racecar):
     """
     This function is run once every time the start button is pressed
     """
-    global rc, waypointCenter, robotState, coneCounter, counter, coneCenter, coneVisible, coneApproaching, canPassCone
+    global rc, waypointCenter, robotState, coneCounter, counter, coneCenter, coneVisible, coneApproaching, canPassCone, coneCenter
     rc = robot
 
     waypointCenter = (rc.camera.get_height() / 2, rc.camera.get_width() / 2)
@@ -89,6 +89,7 @@ def start(robot: racecar_core.Racecar):
     coneVisible = None
     coneApproaching = None
     canPassCone = False
+    coneCenter = None
     
     # Have the car begin at a stop
     rc.drive.stop()
@@ -189,12 +190,12 @@ def update():
     
     print("Robot Status: " + str(robotState)[6:])
     # print(lidarConePos)
-    print(canPassCone)
+    # print(canPassCone)
     # if coneCenter is not None : print(depthImage[coneCenter[0]][coneCenter[1]])
 
     if coneCenter is not None : rc_utils.draw_circle(colorImage, coneCenter)
     if waypointCenter is not None : rc_utils.draw_circle(colorImage, waypointCenter)
-    rc.display.show_color_image(colorImage) 
+    # rc.display.show_color_image(colorImage) 
 
 def detectMarkers() :
     global robotState, coneCounter
