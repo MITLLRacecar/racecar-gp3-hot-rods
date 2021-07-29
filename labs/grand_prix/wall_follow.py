@@ -3,10 +3,9 @@ Copyright MIT and Harvey Mudd College
 MIT License
 Summer 2020
 
-Lab 2A - Color Image Line Following
+Lab 4B - LIDAR Wall Following
 """
 
-# TODO QUEUE UP A TURN WITH A DOUBLE CROP
 
 ########################################################################################
 # Imports
@@ -16,168 +15,109 @@ import sys
 import cv2 as cv
 import numpy as np
 
-sys.path.insert(1, "../../library")
+sys.path.insert(0, "../../library")
 import racecar_core
 import racecar_utils as rc_utils
+from enum import Enum
 
 ########################################################################################
 # Global variables
 ########################################################################################
 
-#rc = racecar_core.create_racecar()
+# rc = racecar_core.create_racecar()
 
-# >> Constants
-# The smallest contour we will recognize as a valid contour
-MIN_CONTOUR_AREA = 30
-
-# A crop window for the floor directly in front of the car
-CROP_FLOOR = None
-
-# Colors, stored as a pair (hsv_min, hsv_max)
-BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
-# TODO (challenge 1): add HSV ranges for other colors
-GREEN = ((60, 50, 50), (80, 255, 255))
-RED = ((0, 50, 50), (0, 255, 255)) # original value was (0, 100, 100)
-
-# >> Variables
-speed = 0.0  # The current speed of the car
-angle = 0.0  # The current angle of the car's wheels
-contour_center = None  # The (pixel row, pixel column) of contour
-contour_area = 0  # The area of contour
-color_list = [GREEN]
+# Add any global variables here
+windows = np.array(())
+start_degrees = -90
+total_degrees = 180
+total_windows = 10
+max_speed = 1
+timer = 0
 
 ########################################################################################
 # Functions
 ########################################################################################
 
-
-def update_contour():
-    """
-    Finds contours in the current color image and uses them to update contour_center
-    and contour_area
-    """
-    global contour_center
-    global contour_area
-    global color_list
-
-    image = rc.camera.get_color_image()
-
-    if image is None:
-        contour_center = None
-        contour_area = 0
-    else:
-        # TODO (challenge 1): Search for multiple tape colors with a priority order
-        # Priority: Red, Green, Blue
-        # (currently we only search for blue)
-        # Crop the image to the floor directly in front of the car
-
-        image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
-        if rc.controller.was_pressed(rc.controller.Button.Y):
-            color_list = []
-            print("cleared list")
-        if rc.controller.was_pressed(rc.controller.Button.X):
-            if BLUE not in color_list:
-                color_list.append(BLUE)
-            print("added blue")
-        elif rc.controller.was_pressed(rc.controller.Button.A):
-            if GREEN not in color_list:
-                color_list.append(GREEN)
-            print("added green")
-        elif rc.controller.was_pressed(rc.controller.Button.B):
-            if RED not in color_list:
-                color_list.append(RED)
-            print("added red")
-
-        for color in color_list:
-            # Find all of the blue contours
-            contours = rc_utils.find_contours(image, color[0], color[1])
-            # Select the largest contour
-            contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
-
-            if contour is not None:
-                # Calculate contour information
-                contour_center = rc_utils.get_contour_center(contour)
-                contour_area = rc_utils.get_contour_area(contour)
-
-                # Draw contour onto the image
-                rc_utils.draw_contour(image, contour)
-                rc_utils.draw_circle(image, contour_center)
-                break
-
-            else:
-                contour_center = None
-                contour_area = 0
-
-        # Display the image to the screen
-        # rc.display.show_color_image(image)
-
-
 def start(robot: racecar_core.Racecar):
     global rc
-    rc = robot
-
     """
     This function is run once every time the start button is pressed
     """
-    global speed
-    global angle
-    global CROP_FLOOR
+    rc = robot
+    # Have the car begin at a stop
+    rc.drive.stop()
+    global max_speed
+    rc.drive.set_max_speed(max_speed)
 
-    # Initialize variables
-    speed = 0
-    angle = 0
-    CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
+    # Create scanning windows
+    global windows
+    global total_degrees
+    global total_windows
+    global start_degrees
+    window_size = round(total_degrees / total_windows)
+    for i in range(total_windows):
+        windows = np.append(windows, i * window_size)
+        windows = np.append(windows, (i+1) * window_size - 1)
 
-    # Set initial driving speed and angle
-    rc.drive.set_speed_angle(speed, angle)
-
-    # Set update_slow to refresh every half second
-    rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(0.75)
+    windows = windows + start_degrees
+    windows = windows.reshape(-1, 2)
+    print(windows)
 
     # Print start message
-    print( " Wall follow")
-
-
-def remap_range(
-    val: float,
-    old_min: float,
-    old_max: float,
-    new_min: float,
-    new_max: float,
-) -> float:
-    """
-    Remaps a value from one range to another range.
-
-    Args:
-        val: A number form the old range to be rescaled.
-        old_min: The inclusive 'lower' bound of the old range.
-        old_max: The inclusive 'upper' bound of the old range.
-        new_min: The inclusive 'lower' bound of the new range.
-        new_max: The inclusive 'upper' bound of the new range.
-
-    Note:
-        min need not be less than max; flipping the direction will cause the sign of
-        the mapping to flip.  val does not have to be between old_min and old_max.
-    """
-    # TODO: remap val to the new range
-    '''
-    old_range = old_max - old_min
-    new_range = new_max - new_min
-    return (((val - old_min) * new_range) / old_range) + new_min
-    '''
-    ratio = (val - old_min) / (old_max - old_min)
-    new_range = new_max - new_min
-    return (ratio * new_range) + new_min
+    print("Wall following")
 
 def update():
-    pass
+    # Follow the wall to the right of the car without hitting anything.
 
+    global windows # getting all the angle windows that the car will look at
+    global total_degrees
+    global total_windows
+    global start_degrees
+    global timer
+    speed = 1
+
+    # First grab lidar data
+    scan = rc.lidar.get_samples()
+
+    # Get the (!!!average) closest distance for each window using lidar scan data
+    windows_distances = np.array(())
+    for window in windows:
+        _, window_distance = rc_utils.get_lidar_closest_point(scan, window)
+        windows_distances = np.append(windows_distances, window_distance)
+    
+    windows_distances = windows_distances.reshape(-1, 1)
+
+    # Turns to the angle
+    angle_index = np.argmax(windows_distances)
+    angle_degrees = np.mean(windows[angle_index])
+    angle = rc_utils.remap_range(angle_degrees, start_degrees, start_degrees + total_degrees - 1, -1, 1) * 2
+    angle = rc_utils.clamp(angle, -1, 1)
+
+    # Manual speed control
+    """
+    rt = rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+    lt = rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+    speed = rt - lt
+    """
+
+    # If the distance in front of you is very close, SLOW DOWN
+    _, forward_dist = rc_utils.get_lidar_closest_point(scan, (-2, 2))
+    if forward_dist < 250 * max_speed and abs(speed) == speed:
+        multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0 * max_speed, 0.7 * max_speed)
+        speed = multiplier * speed
+
+    timer += rc.get_delta_time()
+    if timer < 0.8:
+        angle = 0
+        speed = 1
+
+    print(f"angle degrees: {angle_degrees}, angle {angle}")
+    rc.drive.set_speed_angle(speed, angle)
 
 ########################################################################################
 # DO NOT MODIFY: Register start and update and begin execution
 ########################################################################################
 
 # if __name__ == "__main__":
-#     rc.set_start_update(start, update)#, update_slow)
+#     rc.set_start_update(start, update, None)
 #     rc.go()

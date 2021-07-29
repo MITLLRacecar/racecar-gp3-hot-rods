@@ -24,7 +24,11 @@ import racecar_utils as rc_utils
 
 #rc = racecar_core.create_racecar()
 BLUE = ((90, 120, 120), (120, 255, 255))  # The HSV range for the color blue
-CROP_FLOOR = None
+ORANGE = ((0, 100, 150), (40, 255, 255))  # THE HSV threshhold for the color orange
+CROP_FLOOR = (
+    (480 - 220, 0),
+    (480, 640),
+)
 
 # Add any global variables here
 
@@ -32,35 +36,6 @@ CROP_FLOOR = None
 # Functions
 ########################################################################################
 
-def find_contours(mask):
-    """
-    Returns a list of contours around all objects in a mask.
-    """
-    return cv.findContours(mask, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[0]
-
-def get_mask(
-    image,
-    hsv_lower,
-    hsv_upper
-):
-    """
-    Returns a mask containing all of the areas of image which were between hsv_lower and hsv_upper.
-    
-    Args:
-        image: The image (stored in BGR) from which to create a mask.
-        hsv_lower: The lower bound of HSV values to include in the mask.
-        hsv_upper: The upper bound of HSV values to include in the mask.
-    """
-    # Convert hsv_lower and hsv_upper to numpy arrays so they can be used by OpenCV
-    hsv_lower = np.array(hsv_lower)
-    hsv_upper = np.array(hsv_upper)
-    # TODO: Use the cv.cvtColor function to switch our BGR colors to HSV colors
-    image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-    
-    # TODO: Use the cv.inRange function to highlight areas in the correct range
-    mask = cv.inRange(image, hsv_lower, hsv_upper, cv.THRESH_BINARY)
-
-    return mask
 
 def get_two_largest_contours(contours, min_area: int = 30):
     """
@@ -76,7 +51,7 @@ def get_two_largest_contours(contours, min_area: int = 30):
     if len(contours) == 0:
         # TODO: What should we return if the list of contours is empty?
         return None, None
-    
+
     # TODO: Return the largest contour, but return None if no contour is larger than min_area
     contoursAreas = []
     for i in range(len(contours)):
@@ -89,17 +64,14 @@ def get_two_largest_contours(contours, min_area: int = 30):
     maxContourArea2 = max(contoursAreas)
     second_i = contoursAreas.index(maxContourArea2)
 
-
     if maxContourArea2 > min_area:
-        return contours[final_i], contours[second_i] 
+        return contours[final_i], contours[second_i]
     elif maxContourArea > min_area:
         return contours[final_i], None
     else:
         print("No blue contours detected")
         return None, None
 
-def get_contours(color_image):
-    contours = rc_utils.find_contours(image, BLUE[0], BLUE[1])
 
 def start(robot: racecar_core.Racecar):
     global rc, CROP_FLOOR
@@ -109,45 +81,85 @@ def start(robot: racecar_core.Racecar):
 
     # Have the car begin at a stop
     rc.drive.stop()
+    rc.drive.set_max_speed(1)
 
     # Print start message
     print(">> Grand Prix Part 9: The Leap of Faith")
 
 
 def update():
-# Find the largest contour
-    image = rc.camera.get_color_image()
-    CROP_FLOOR = ((rc.camera.get_height() - 250, 0), (rc.camera.get_height(), rc.camera.get_width()))
-    image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
-    BLUE = ((90, 120, 120), (120, 255, 255))
-    mask = get_mask(image, BLUE[0], BLUE[1])
+    speed = 0.5
+    angle = 0
+    contour_centers_average_x = (
+        rc.camera.get_width() / 2
+    )  # setting a default value just in case
 
-    contours = find_contours(mask)
+    # Find the largest contour
+    image = rc.camera.get_color_image()
+    image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
+
+    scan = rc.lidar.get_samples()
+    scan = (scan - 0.001) % 10000
+
+    contours = rc_utils.find_contours(image, BLUE[0], BLUE[1])
     largest_contour_1, largest_contour_2 = get_two_largest_contours(contours)
     contour_centers = []
 
+    orange_contours = rc_utils.find_contours(image, ORANGE[0], ORANGE[1])
+    largest_orange_contour = rc_utils.get_largest_contour(orange_contours)
+    if type(largest_orange_contour) == np.ndarray:
+        largest_orange_contour_area = rc_utils.get_contour_area(largest_orange_contour)
+    else:
+        largest_orange_contour_area = 0
+
     # Draw it on the image
     for contour in [largest_contour_1, largest_contour_2]:
-        #print(image.shape)
+        # print(image.shape)
         if type(contour) == np.ndarray:
             contour_centers.append(rc_utils.get_contour_center(contour))
-            rc_utils.draw_contour(image, contour, (0,0,0))
+            rc_utils.draw_contour(image, contour, (0, 0, 0))
 
     for center in contour_centers:
-        rc_utils.draw_circle(image, center, (0,0,0), 6)
+        rc_utils.draw_circle(image, center, (0, 0, 0), 6)
 
     rc.display.show_color_image(image)
 
-    # temp manual controls
-    manual_speed = 0
-    manual_angle = 0
+    # remapping angle using p controller
+    if len(contour_centers) == 0:
+        angle = 0
+    elif len(contour_centers) == 2:
+        # check if both contours are on one side
+        if contour_centers[0][1] > rc.camera.get_width() * (0.66) and contour_centers[
+            1
+        ][1] > rc.camera.get_width() * (0.66):
+            contour_centers = [contour_centers[0]]
+            # otherwise just use a p controller
+        else:
+            contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
+            angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 1.2
+    elif len(contour_centers) == 1:
+        contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
+        angle = (
+            rc_utils.remap_range(
+                contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
+            )
+            * 2
+        )
 
-    manual_speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
-    manual_speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
-    manual_angle = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
-    rc.drive.set_speed_angle(manual_speed, manual_angle)
-    
+    # slow down if in orange section
+    if largest_orange_contour_area > 3000:
+        angle = 0
 
+    # slow down if in ramp section
+    if abs(contour_centers_average_x - rc.camera.get_width()) < 10:
+        angle = 0
+
+    if scan[0] > 9000:
+        speed = 0.8
+
+    angle = rc_utils.clamp(angle, -1, 1)
+
+    rc.drive.set_speed_angle(speed, angle)
 
 
 ########################################################################################

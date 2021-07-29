@@ -17,7 +17,8 @@ import numpy as np
 sys.path.insert(0, "../../library")
 import cone_slalom as coneSlalom
 import line_follow as lineFollow
-import wall_follow as wallFollow
+# import wall_follow as wallFollow
+import wall_follow_dg as wallFollow
 import bridge as bridge
 import columns as columns
 import elevator as elevator
@@ -35,6 +36,9 @@ from enum import IntEnum
 rc = racecar_core.create_racecar()
 
 MARKER_DETECTION_DISTANCE = 100
+MIN_STATE_TIMER = 2
+
+# Enables manual robot control override
 DEBUG = False
 
 # Marker IDs for each segment
@@ -69,19 +73,22 @@ SegmentMappings = {
 # Functions
 ########################################################################################
 
-
 def start():
+    global timer
     # Have the car begin at a stop
     rc.drive.stop()
 
     # Print start message
     print(">> Final Challenge - Grand Prix")
 
+    timer = 0
+
     # Start selected segment
     SegmentMappings[currentSegment].start(rc)
 
 def update():
     detectARMarkers()
+    tick()
 
     # Update selected segment
     SegmentMappings[currentSegment].update()
@@ -92,7 +99,7 @@ def update():
     rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0])
 
 def detectARMarkers() :
-    global currentSegment
+    global currentSegment, timer, colorImage
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
@@ -112,10 +119,29 @@ def detectARMarkers() :
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE:
             currentSegment = id
             rc.drive.stop()
-            # print("Marker detected: " + str(id))
+            
+            if rc.controller.was_pressed((rc.controller.Button.A)) : 
+                print("Current Segment: " + str(currentSegment))
 
             # Start selected segment
             SegmentMappings[currentSegment].start(rc)
+            timer = 0
+
+def tick() :
+    global timer, currentSegment
+    timer += rc.get_delta_time()
+
+    CROP_FLOOR = ((360, 0), (rc.camera.get_height(), rc.camera.get_width()))
+    GREEN = ((60, 50, 50), (80, 255, 255))
+    MIN_CONTOUR_AREA = 40
+    cropped_image = rc_utils.crop(colorImage, CROP_FLOOR[0], CROP_FLOOR[1])
+
+    contours = rc_utils.find_contours(cropped_image, GREEN[0], GREEN[1])
+    contour = rc_utils.get_largest_contour(contours, MIN_CONTOUR_AREA)
+
+    if timer >= MIN_STATE_TIMER and contour is not None:
+        currentSegment = Segment.LineFollow 
+        SegmentMappings[currentSegment].start(rc)
 
 ########################################################################################
 # DO NOT MODIFY: Register start and update and begin execution

@@ -11,9 +11,9 @@ Final Challenge - Grand Prix
 ########################################################################################
 
 import sys
-from typing import Tuple
 import cv2 as cv
 import numpy as np
+import pprint
 
 sys.path.insert(0, "../../library")
 import racecar_core
@@ -23,12 +23,9 @@ import racecar_utils as rc_utils
 # Global variables
 ########################################################################################
 
-# rc = racecar_core.create_racecar()
-#PURPLE = ((90, 120, 120), (120, 255, 255)) 
-PURPLE = ((130, 140, 0), (140, 255, 255))
-ORANGE = ((10, 50, 150), (30, 255, 255))
-CROP_FLOOR = None
-MIN_CONTOUR_AREA = 100
+PURPLE = ((120, 140, 0), (150, 255, 255))
+ORANGE = ((10, 150, 150), (30, 255, 255))
+CROP_FLOOR = ((480 - 250, 0), (480, 640))
 
 # Add any global variables here
 
@@ -36,45 +33,56 @@ MIN_CONTOUR_AREA = 100
 # Functions
 ########################################################################################
 
-def get_area_contours(contours) :
-    sum = 0
-    for contour in contours :
-        if contour is not None : sum += rc_utils.get_contour_area(contour)
+def get_two_largest_contours(contours, min_area: int = 100):
+    """
+    Finds the largest contour with size greater than min_area.
 
-    return sum
+    Args:
+        contours: A list of contours found in an image.
+        min_area: The smallest contour to consider (in number of pixels)
 
-def get_two_largest_contours(contours):
+    Returns:
+        The largest contour from the list, or None if no contour was larger than min_area.
+    """
     if len(contours) == 0:
+        # TODO: What should we return if the list of contours is empty?
         return None, None
     
+    # TODO: Return the largest contour, but return None if no contour is larger than min_area
     contoursAreas = []
-    for contour in contours :
-        contoursAreas.append(rc_utils.get_contour_area(contour))
+    for i in range(len(contours)):
+        contoursAreas.append(cv.contourArea(contours[i]))
 
-    maxContour = contours[contoursAreas.index(max(contoursAreas))]
-    maxContour2 = None
+    maxContourArea = max(contoursAreas)
+    final_i = contoursAreas.index(maxContourArea)
 
-    contoursAreas.pop(contoursAreas.index(max(contoursAreas)))
+    contoursAreas[final_i] = 0
+    maxContourArea2 = max(contoursAreas)
+    second_i = contoursAreas.index(maxContourArea2)
 
-    if len(contoursAreas) > 0 :  maxContour2 = contours[contoursAreas.index(max(contoursAreas))]
 
-    return maxContour, maxContour2
-
+    if maxContourArea2 > min_area:
+        return contours[final_i], contours[second_i] 
+    elif maxContourArea > min_area:
+        return contours[final_i], None
+    else:
+        print("No orange or purple contours detected")
+        return None, None
 
 def start(robot: racecar_core.Racecar):
-    global rc, CROP_FLOOR
+    global rc
     rc = robot
-    # Have the car begin at a stop
+
     rc.drive.stop()
-
-    CROP_FLOOR = ((rc.camera.get_height() - 170, 0), (rc.camera.get_height(), rc.camera.get_width()))
-
+    rc.drive.set_max_speed(0.75)
     # Print start message
-    print(">> Grand Prix Part 9: The Leap of Faith")
+    print(">> Grand Prix Part 3: The Bridge")
 
 
 def update():
-# Find the largest contour
+    # Find the largest contour
+    color_priority = [PURPLE, ORANGE]
+    #color_priority = [ORANGE, PURPLE]
     image = rc.camera.get_color_image()
 
     # Get the AR markers BEFORE we crop it
@@ -83,39 +91,66 @@ def update():
     # Crop the image
     image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
-    orange_contours = rc_utils.find_contours(image, ORANGE[0], ORANGE[1])
-    purple_contours = rc_utils.find_contours(image, PURPLE[0], PURPLE[1])
+    color_index = -1
+    for color in color_priority:
+        color_index += 1
+        contours = rc_utils.find_contours(image, color[0], color[1])
+        if len(contours) != 0:
+            if len(contours) != 0 and len(sorted(contours, key=len, reverse=True)[0]) > 100:
+                break
 
-    orange_largest = get_two_largest_contours(orange_contours)
-    purple_largest = get_two_largest_contours(purple_contours)
+    largest_contour_1, largest_contour_2 = get_two_largest_contours(contours)
+    contour_centers = []
 
-    orange_area = get_area_contours(orange_largest)
-    purple_area = get_area_contours(purple_largest)
 
-    if orange_largest[0].any() != None and orange_largest[1].any() != None : orange_centers = rc_utils.get_contour_center(orange_largest[0]), rc_utils.get_contour_center(orange_largest[1])
-    if purple_largest[0].any() != None and purple_largest[1].any() != None : purple_centers = rc_utils.get_contour_center(purple_largest[0]), rc_utils.get_contour_center(purple_largest[1])
+    # Draw it on the image
+    for contour in [largest_contour_1, largest_contour_2]:
+        if type(contour) == np.ndarray:
+            contour_centers.append(rc_utils.get_contour_center(contour))
+            rc_utils.draw_contour(image, contour, (0,0,0))
 
-    if orange_area > purple_area:
-        waypoint = (0,0)
-        print("orange")
-    else : 
-        waypoint = (0,0)
-        print("purple")
+    for center in contour_centers:
+        rc_utils.draw_circle(image, center, (0,0,0), 6)
 
-    waypoint = tuple(0.5*x for x in waypoint)
-    print(waypoint)
-
-    rc_utils.draw_circle(waypoint)
     rc.display.show_color_image(image)
-    
-    # temp manual controls
-    manual_speed = 0
-    manual_angle = 0
 
-    manual_speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
-    manual_speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
-    manual_angle = rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0]
-    rc.drive.set_speed_angle(manual_speed, manual_angle)
+    if color_index == 1: # normal color
+        if len(contour_centers) == 0:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 1:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 2:
+            contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
+    
+    elif color_index == 0:
+        print("TURN COLOR")
+        if len(contour_centers) == 0:
+            contour_centers_average_x = rc.camera.get_width() / 2
+        elif len(contour_centers) == 1:
+            contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
+        elif len(contour_centers) == 2:
+            contour_centers_average_x = contour_centers[1][1]
+
+
+    # temp manual controls
+    speed = 0
+
+    speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
+    speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+
+    angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1)
+    if color_index == 1:
+        angle *= 1.5
+    elif color_index == 0:
+        if abs(angle) == angle:
+            angle = 1
+        else:
+            angle = -1
+        speed *= 0.1
+        print("BIG TURN")
+    angle = rc_utils.clamp(angle, -1, 1)
+
+    rc.drive.set_speed_angle(speed, angle)
     
 
 ########################################################################################
@@ -123,5 +158,5 @@ def update():
 ########################################################################################
 
 # if __name__ == "__main__":
-#     rc.set_start_update(start, update, None)
-#     rc.go()
+#    rc.set_start_update(start, update, None)
+#    rc.go()
