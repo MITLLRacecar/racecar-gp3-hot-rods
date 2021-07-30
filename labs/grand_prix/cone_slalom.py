@@ -28,7 +28,7 @@ from enum import IntEnum
 class State(IntEnum) :
     approaching = 0 # Go around red cone
     passing = 1 # Go around blue cone
-    stopping = 2 # Finish line
+    finishing = 2 # Finish line
     searching = 3 # Manual control until we re-aquire
 
 class Cone(IntEnum) :
@@ -51,7 +51,7 @@ WHITE = ((90, 30, 250), (110, 45, 255))
 
 MAX_SPEED = 0.5
 MIN_CONTOUR_AREA = 550
-MIN_PASSING_DISTANCE = 200
+MIN_PASSING_DISTANCE = 110
 PASSING_ANGLE_RANGE = (60, 75)
 
 depthImage = None
@@ -62,10 +62,11 @@ coneCenter = None
 speed = 0
 angle = 0
 counter = 0
-coneCounter = None
+coneCounter = 0
 finishLine = False
 distanceToCone = 0
 lidarConePos = (0,0)
+attempts = 0
 
 ########################################################################################
 # Functions
@@ -75,10 +76,24 @@ def start(robot: racecar_core.Racecar):
     """
     This function is run once every time the start button is pressed
     """
-    global rc, waypointCenter
+    global rc, waypointCenter, robotState, coneCounter, counter, coneCenter, coneVisible, coneApproaching, canPassCone, coneCenter, timer, attempts
     rc = robot
 
     waypointCenter = (rc.camera.get_height() / 2, rc.camera.get_width() / 2)
+
+    attempts += 1
+
+    # Reset incase grand_prix calls us again
+    rc.drive.set_max_speed(0.25)
+    robotState = State.searching
+    coneCounter = 0
+    counter = 0
+    coneCenter = None
+    coneVisible = None
+    coneApproaching = None
+    canPassCone = False
+    coneCenter = None
+    timer = 0
     
     # Have the car begin at a stop
     rc.drive.stop()
@@ -153,7 +168,7 @@ def update():
     """
     # Slalom between red and blue cones.  The car should pass to the right of
     # each red cone and the left of each blue cone.
-    global colorImage, depthImage, speed, angle, coneCenter, waypointCenter, lidarScan, robotState
+    global colorImage, depthImage, speed, angle, coneCenter, waypointCenter, lidarScan, robotState, timer
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
     lidarScan = rc.lidar.get_samples()
@@ -162,8 +177,8 @@ def update():
         approachCone()
     if robotState == robotState.passing :
         passCone()
-    if robotState == robotState.stopping :
-        stop()
+    if robotState == robotState.finishing :
+        finish()
     if robotState == robotState.searching:
         search()
 
@@ -175,15 +190,17 @@ def update():
     detectMarkers()
     # print(isRobotPastCone(1) and canPassCone)
 
-    if coneCounter == 9 and robotState == State.approaching : robotState = State.stopping
+    if coneCounter == 9 and robotState == State.passing : robotState = State.finishing
     
-    # print("Robot Status: " + str(robotState)[6:])
+    print("Robot Status: " + str(robotState)[6:])
+    timer += rc.get_delta_time()
     # print(lidarConePos)
+    # print(canPassCone)
     # if coneCenter is not None : print(depthImage[coneCenter[0]][coneCenter[1]])
 
     if coneCenter is not None : rc_utils.draw_circle(colorImage, coneCenter)
     if waypointCenter is not None : rc_utils.draw_circle(colorImage, waypointCenter)
-    rc.display.show_color_image(colorImage) 
+    # rc.display.show_color_image(colorImage) 
 
 def detectMarkers() :
     global robotState, coneCounter
@@ -197,9 +214,17 @@ def detectMarkers() :
             robotState = State.searching
 
 def approachCone():
-    global speed, angle, coneVisible, robotState, coneCounter, coneCenter, counter, canPassCone
+    global speed, angle, coneVisible, robotState, coneCounter, coneCenter, counter, canPassCone, timer
     if waypointCenter is not None : angle = angleController()
-    speed = speedController()
+
+    if attempts == 1 and timer < 2 :
+        # Brake from fast entry into segment
+        speed = -0.2
+    # elif attempts > 1 :
+    #     # Stop and wait for line follow
+    #     speed = 0
+    else : 
+        speed = speedController()
 
     counter = 0
     if coneCenter is not None and depthImage[coneCenter[0]][coneCenter[1]] < 75 : 
@@ -219,7 +244,7 @@ def passCone():
     if coneApproaching == coneVisible : 
         speed = speedController() * 0.9
         angle = turnAngle if coneApproaching == Cone.blue else -turnAngle
-    elif not isRobotPastCone(15) and coneApproaching != coneVisible :
+    elif not isRobotPastCone(1) and coneApproaching != coneVisible :
         robotState = State.approaching
         coneApproaching = coneVisible
 
@@ -232,17 +257,18 @@ def isRobotPastCone(iterations) -> bool :
 
 def search():
     global speed, angle, robotState, coneApproaching
-    speed = MAX_SPEED
+    print(attempts)
+    speed = MAX_SPEED #if attempts == 1 else 0
     angle = 0
 
     if coneVisible != None : 
         robotState = State.approaching
         coneApproaching = coneVisible
 
-def stop(): 
+def finish(): 
     global speed, angle
-    speed = 0
-    angle = 0 
+    speed = 0.8
+    angle = 0.5
 
 def speedController():
     kP = 1.5
