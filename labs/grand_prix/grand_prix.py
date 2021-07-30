@@ -103,8 +103,8 @@ def detectARMarkers() :
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
-    colorImage = rc_utils.crop(colorImage, (0, 230), (480, 430))
-    depthImage = rc_utils.crop(depthImage, (0, 230), (480, 430))
+    colorImage = rc_utils.crop(colorImage, (0, 130), (480, 500))
+    depthImage = rc_utils.crop(depthImage, (0, 130), (480, 500))
     # rc.display.show_color_image(colorImage)
 
     markers = rc_utils.get_ar_markers(colorImage)
@@ -132,6 +132,7 @@ def detectARMarkers() :
 
         # Update current segment
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
+            print("UPDATING AR")
             prevSegment = currentSegment
 
             currentSegment = id
@@ -151,8 +152,10 @@ def detectARMarkers() :
             # Start selected segment
             timer = 0
             SegmentMappings[currentSegment].start(rc)
+            print("TESTING")
 
             if SegmentMappings[id] == lineFollow:
+                
                 if WALL_FOLLOWED_BEFORE == True:
                     print("WALL FOLLOW SLOWER")
                     lineFollow.MAX_SPEED = 0.5
@@ -161,9 +164,14 @@ def detectARMarkers() :
                     lineFollow.MAX_SPEED = 0.3
                 if id == Segment.SlabSlalom: # Slabs
                     print("SLAB SLOWER")
-                    lineFollow.MAX_SPEED = 0.5
+                    lineFollow.id = Segment.SlabSlalom
+                    lineFollow.MAX_SPEED = 0.55
                 if id == Segment.Columns: # Wall Follow
                     print("WALL FOLLOW SLOWER")
+                if id == Segment.Trains: # Train
+                    print("TRAIN SLOWER")
+                    lineFollow.id = Segment.Trains
+                    lineFollow.MAX_SPEED = 0.55
                 if id == Segment.Elevator: # Elevator
                     print("ELEVATOR")
                     lineFollow.MAX_SPEED = 0.45

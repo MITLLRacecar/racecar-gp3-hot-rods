@@ -82,7 +82,7 @@ def update():
     scan = (scan - 0.001) % 10000
 
     timer += rc.get_delta_time()
-    if timer < 1:
+    if timer < 0.7:
         print()
         angle = 0.1
         speed = 0.3

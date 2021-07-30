@@ -29,7 +29,6 @@ import racecar_utils as rc_utils
 # >> Constants
 # The smallest contour we will recognize as a valid contour
 MIN_CONTOUR_AREA = 30
-MAX_SPEED = 0.45
 
 # A crop window for the floor directly in front of the car
 CROP_FLOOR = None
@@ -46,7 +45,7 @@ angle = 0.0  # The current angle of the car's wheels
 contour_center = None  # The (pixel row, pixel column) of contour
 contour_area = 0  # The area of contour
 color_list = [GREEN]
-MAX_SPEED = 0.7
+MAX_SPEED = 0.68
 id = 0
 
 ########################################################################################
@@ -191,6 +190,7 @@ def update():
     global CROP_FLOOR
     global id
     rc.drive.set_max_speed(MAX_SPEED)
+    print(MAX_SPEED)
 
     # Search for contours in the current color image
     update_contour()
@@ -216,6 +216,13 @@ def update():
     # Slow down if something is in front
     depth_image = rc.camera.get_depth_image()
     scan = rc.lidar.get_samples()
+
+    if id == 6:
+        scan = rc.lidar.get_samples()
+        scan = (scan - 0.01) % 10000
+        if scan[0] < 160:
+            print("SLOWING DOWN")
+            speed = 0.2
 
     # Print the current speed and angle when the A button is held down
     if rc.controller.is_down(rc.controller.Button.LB):
