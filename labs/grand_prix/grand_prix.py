@@ -17,7 +17,6 @@ sys.path.insert(0, "../../library")
 import cone_slalom as coneSlalom
 import line_follow as lineFollow
 import wall_follow as wallFollow
-# import wall_follow_dg as wallFollow
 import bridge as bridge
 import columns as columns
 import elevator as elevator

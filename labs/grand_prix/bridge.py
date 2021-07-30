@@ -26,7 +26,7 @@ import racecar_utils as rc_utils
 PURPLE = ((120, 140, 0), (150, 255, 255), "purple")
 ORANGE = ((10, 150, 150), (30, 255, 255), "orange")
 ORANGE_AR = ((10, 100, 60), (30, 255, 255), "orange") # different threshold for AR since it is in the shade
-CROP_FLOOR = ((480 - 250, 0), (480, 640))
+CROP_FLOOR = ((480 - 150, 0), (480, 640))
 color_priority = []
 
 # Add any global variables here
@@ -92,12 +92,24 @@ def start(robot: racecar_core.Racecar):
 
 def update():
     global color_priority
+    speed = 1
 
     # Find the largest contour
     image = rc.camera.get_color_image()
    
     # Crop the image
     image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
+
+    # Get secondary contours
+    secondary_contours = rc_utils.find_contours(image, color_priority[0][0], color_priority[0][1])
+    largest_secondary_contour = rc_utils.get_largest_contour(secondary_contours, 100)
+    if type(largest_secondary_contour) == np.ndarray:
+        print("SLOWED")
+        speed = 0.5
+    if color_priority[0][2] == "purple":
+        image = cv.drawContours(image, secondary_contours, -1, (16, 134, 249), cv.FILLED)
+    elif color_priority[0][2] == "orange":
+        image = cv.drawContours(image, secondary_contours, -1, (254, 24, 125), cv.FILLED)
 
     color_index = -1
     for color in color_priority: 
@@ -120,44 +132,39 @@ def update():
         rc_utils.draw_circle(image, center, (0,0,0), 6)
 
     rc.display.show_color_image(image)
-
-    if color_index == 1: # normal color
-        if len(contour_centers) == 0:
-            contour_centers_average_x = rc.camera.get_width() / 2
-        elif len(contour_centers) == 1:
-            contour_centers_average_x = rc.camera.get_width() / 2
-        elif len(contour_centers) == 2:
-            contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
-    
-    elif color_index == 0:
-        print("TURN COLOR")
-        if len(contour_centers) == 0:
-            contour_centers_average_x = rc.camera.get_width() / 2
-        elif len(contour_centers) == 1:
-            contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
-        elif len(contour_centers) == 2:
-            contour_centers_average_x = contour_centers[1][1]
-
-
-    # temp manual controls
     """
-    speed = 0
-    speed -= rc.controller.get_trigger(rc.controller.Trigger.LEFT)
-    speed += rc.controller.get_trigger(rc.controller.Trigger.RIGHT)
+    if len(contour_centers) == 0:
+        contour_centers_average_x = rc.camera.get_width() / 2
+    elif len(contour_centers) == 1:
+        contour_centers_average_x = rc.camera.get_width() / 2
+    elif len(contour_centers) == 2:
+        contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
     """
-    speed = 1
-
-    angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1)
-    if color_index == 1:
-        angle *= 2
-    elif color_index == 0:
-        if abs(angle) == angle:
-            angle = 1
+    if len(contour_centers) == 0:
+        angle = 0
+        contour_centers_average_x = 0
+    elif len(contour_centers) == 2:
+        # check if both contours are on one side
+        if contour_centers[0][1] > rc.camera.get_width() * (0.66) and contour_centers[
+            1
+        ][1] > rc.camera.get_width() * (0.66):
+            contour_centers = [contour_centers[0]]
+            # otherwise just use a p controller
         else:
-            angle = -1
-        speed *= 0.1
-        print("BIG TURN")
+            contour_centers_average_x = (contour_centers[0][1] + contour_centers[1][1]) / 2
+            angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 1.2
+    elif len(contour_centers) == 1:
+        contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
+        angle = (
+            rc_utils.remap_range(
+                contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
+            )
+            * 1.5
+        )
 
+
+    # Angle
+    angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 3
 
     angle = rc_utils.clamp(angle, -1, 1)
 
