@@ -31,7 +31,7 @@ windows = np.array(())
 start_degrees = -90
 total_degrees = 180
 total_windows = 10
-max_speed = 0.8
+max_speed = 0.5
 timer = 0
 
 ########################################################################################
@@ -54,6 +54,8 @@ def start(robot: racecar_core.Racecar):
     global total_degrees
     global total_windows
     global start_degrees
+    global timer
+    timer = 0
     window_size = round(total_degrees / total_windows)
     for i in range(total_windows):
         windows = np.append(windows, i * window_size)
@@ -61,7 +63,6 @@ def start(robot: racecar_core.Racecar):
 
     windows = windows + start_degrees
     windows = windows.reshape(-1, 2)
-    print(windows)
 
     # Print start message
     print(">> Wall Following")
@@ -78,6 +79,16 @@ def update():
 
     # First grab lidar data
     scan = rc.lidar.get_samples()
+    scan = (scan - 0.001) % 10000
+
+    # Prevent the car from wall following if it has empty space to either side
+    for window in ((268, 4), (88, 4)):
+        dist = rc_utils.get_lidar_average_distance(scan, window[0], window[1])
+        print(dist)
+        if dist > 200:
+            print("NOT WALL FOLLOWING")
+            rc.drive.set_speed_angle(0.5, 0)
+            return
 
     # Get the (!!!average) closest distance for each window using lidar scan data
     windows_distances = np.array(())
@@ -107,11 +118,10 @@ def update():
         speed = multiplier * speed
 
     timer += rc.get_delta_time()
-    if timer < 0.8:
+    if timer < 0.2:
         angle = 0
-        speed = 1
+        speed = 0.15
 
-    print(f"angle degrees: {angle_degrees}, angle {angle}")
     rc.drive.set_speed_angle(speed, angle)
 
 ########################################################################################
