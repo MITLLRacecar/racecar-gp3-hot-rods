@@ -164,17 +164,21 @@ def update():
 
 
     # slow down if in orange section
-    if largest_orange_contour_area > 3000:
+    if largest_orange_contour_area > 24000:
+        print("ORANGE")
         angle = 0
-        speed = 0.3
+        speed = 0.1
+    elif largest_orange_contour_area > 15000:
+        print("ORANGE STOP")
+        angle = 0
+        speed = 0.1
+
 
     # slow down if in ramp section
-    if abs(contour_centers_average_x - rc.camera.get_width()) < 20:
-        angle = 0
-
-    if scan[0] > 9000:
-        speed = 0.8
-        angle = 0
+    if rc_utils.get_lidar_average_distance(scan, 45, 90) > 4000: # and abs(contour_centers_average_x - rc.camera.get_width() / 2) < 20:
+        speed = 0.7
+        print("ON FINAL RAMP!")
+        angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 2
 
     angle = rc_utils.clamp(angle, -1, 1)
 
