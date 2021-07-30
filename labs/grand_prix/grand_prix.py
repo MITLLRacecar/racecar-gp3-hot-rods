@@ -102,8 +102,9 @@ def detectARMarkers() :
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
-    colorImage = rc_utils.crop(colorImage, (0, 100), (480, 540))
-    depthImage = rc_utils.crop(depthImage, (0, 100), (480, 540))
+    colorImage = rc_utils.crop(colorImage, (0, 230), (480, 430))
+    depthImage = rc_utils.crop(depthImage, (0, 230), (480, 430))
+    rc.display.show_color_image(colorImage)
 
     markers = rc_utils.get_ar_markers(colorImage)
 

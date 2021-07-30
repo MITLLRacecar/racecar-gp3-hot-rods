@@ -126,6 +126,8 @@ def update():
             speed = -0.2
           elif forward_dist < 25:
             speed = 0
+        elif item == "orange":
+          speed = -0.2
         else:
           speed = 0
           

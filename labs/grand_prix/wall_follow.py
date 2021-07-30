@@ -81,14 +81,23 @@ def update():
     scan = rc.lidar.get_samples()
     scan = (scan - 0.001) % 10000
 
+    timer += rc.get_delta_time()
+    if timer < 3:
+        print()
+        angle = 0.1
+        speed = 0.15
+
+        rc.drive.set_speed_angle(speed, angle)
+        return
+
     # Prevent the car from wall following if it has empty space to either side
-    for window in ((268, 4), (88, 4)):
-        dist = rc_utils.get_lidar_average_distance(scan, window[0], window[1])
-        print(dist)
-        if dist > 200:
-            print("NOT WALL FOLLOWING")
-            rc.drive.set_speed_angle(0.5, 0)
-            return
+    # for window in ((268, 4), (88, 4)):
+    #     dist = rc_utils.get_lidar_average_distance(scan, window[0], window[1])
+    #     print(dist)
+    #     if dist > 200:
+    #         print("NOT WALL FOLLOWING")
+    #         rc.drive.set_speed_angle(0.5, 0)
+    #         return
 
     # Get the (!!!average) closest distance for each window using lidar scan data
     windows_distances = np.array(())
@@ -116,11 +125,6 @@ def update():
     if forward_dist < 250 * max_speed and abs(speed) == speed:
         multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0 * max_speed, 0.7 * max_speed)
         speed = multiplier * speed
-
-    timer += rc.get_delta_time()
-    if timer < 0.2:
-        angle = 0
-        speed = 0.15
 
     rc.drive.set_speed_angle(speed, angle)
 

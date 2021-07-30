@@ -82,7 +82,6 @@ def update():
     global start_degrees
     global timer
     global orientation
-    speed = 1
 
     # First grab lidar data
     scan = rc.lidar.get_samples()
@@ -91,16 +90,27 @@ def update():
     # Get AR Codes and orientation of the closest AR marker
     image = rc.camera.get_color_image()
     markers = rc_utils.get_ar_markers(image)
+    depth_image = rc.camera.get_depth_image()
+
     if len(markers) != 0:
         corners = markers[0].get_corners()
-        if (corners[0][0] - corners[2][0]) * (corners[0][1] - corners[2][1]) < 4000:
+        top_left = corners[0]
+        bottom_right = corners[2]
+        center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right))) 
+        distance = depth_image[int(center[0])][int(center[1])]
+        print(distance)
+        if (corners[0][0] - corners[2][0]) * (corners[0][1] - corners[2][1]) < 4000 and distance < 165:
             print("DETECTED")
             orientation = markers[0].get_orientation()
 
     
-    if rc_utils.get_lidar_closest_point(scan, (-15, 15))[1] < 70:
+    if rc_utils.get_lidar_closest_point(scan, (-15, 15))[1] < 90:
         print("NONE")
         orientation = None
+        # if orientation == 1:
+        #     orientation = 3
+        # elif orientation == 3:
+        #     orientation = 1
 
     window_size = round(total_degrees / total_windows)
     if orientation == None: # for no AR code
@@ -121,7 +131,7 @@ def update():
     # Turns to the angle
     angle_index = np.argmax(windows_distances)
     angle_degrees = np.mean(windows_cut[angle_index])
-    angle = rc_utils.remap_range(angle_degrees, start_degrees, start_degrees + total_degrees - 1, -1, 1) * 2
+    angle = rc_utils.remap_range(angle_degrees, start_degrees, start_degrees + total_degrees - 1, -1, 1) * 3
     angle = rc_utils.clamp(angle, -1, 1)
 
     # Manual speed control
@@ -132,19 +142,16 @@ def update():
     """
 
     # If the distance in front of you is very close, SLOW DOWN
-    speed = 0.8
+    speed = 1
     # _, forward_dist = rc_utils.get_lidar_closest_point(scan, (-2, 2))
     # if forward_dist < 250 * max_speed and abs(speed) == speed:
     #     multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0.05, 0.3)
     #     speed = multiplier * speed
 
     timer += rc.get_delta_time()
-    # if timer < 2.5:
-    #     angle = 0
-    #     speed = -1
-    # elif timer < 2.8:
-    #     angle = 0
-    #     speed = -0.2
+    if timer < 1.6:
+        angle = 0
+        speed = -0.8
 
     # Prevent the car from wall following if it has empty space to either side
     # for window in ((268, 4), (88, 4)):

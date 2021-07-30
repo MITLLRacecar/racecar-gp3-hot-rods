@@ -132,7 +132,7 @@ def start(robot: racecar_core.Racecar):
 
     # Set update_slow to refresh every half second
     rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(MAX_SPEED)
+    rc.drive.set_max_speed(0.5)
 
     print(">> Line Following")
 
@@ -187,6 +187,21 @@ def update():
         angle = rc_utils.clamp(kP * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
 
     speed = 1
+
+    
+    # Slow down if wall follow ar code is detected
+    image = rc.camera.get_color_image()
+    markers = rc_utils.get_ar_markers(image)
+    if len(markers) > 0: 
+        marker = markers[0]
+        id = marker.get_id()
+        if id == 0:
+            rc.drive.set_max_speed(0.2)
+
+    # Slow down if something is in front
+    depth_image = rc.camera.get_depth_image()
+    #if depth_image[240, 320] < 40:
+        #speed = 0.1
     rc.drive.set_speed_angle(speed, angle)
 
     # Print the current speed and angle when the A button is held down
