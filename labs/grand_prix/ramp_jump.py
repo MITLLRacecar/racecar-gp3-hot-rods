@@ -139,23 +139,42 @@ def update():
             angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 1.2
     elif len(contour_centers) == 1:
         contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
-        angle = (
-            rc_utils.remap_range(
-                contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
+        # Check if there is white (a ramp) to the left of the contour center!
+        if contour_centers[0][1] > rc.camera.get_width() / 2:
+            print("CONTOUR RIGHT")
+            side_pixel_check_channels = np.where(np.array(image[contour_centers[0][0], contour_centers[0][1] - 150]) > 110)[0]
+        else:
+            print("CONTOUR LEFT")
+            side_pixel_check_channels = np.where(np.array(image[contour_centers[0][0], contour_centers[0][1] + 150]) > 110)[0]
+        if len(side_pixel_check_channels) == 3:
+            print("ON RAMP!")
+            angle = (
+                rc_utils.remap_range(
+                    contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
+                )
+                * 2
             )
-            * 2
-        )
+        else:
+            angle = (
+                rc_utils.remap_range(
+                    contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
+                )
+                * -2
+            )
+
 
     # slow down if in orange section
     if largest_orange_contour_area > 3000:
         angle = 0
+        speed = 0.3
 
     # slow down if in ramp section
-    if abs(contour_centers_average_x - rc.camera.get_width()) < 10:
+    if abs(contour_centers_average_x - rc.camera.get_width()) < 20:
         angle = 0
 
     if scan[0] > 9000:
         speed = 0.8
+        angle = 0
 
     angle = rc_utils.clamp(angle, -1, 1)
 
