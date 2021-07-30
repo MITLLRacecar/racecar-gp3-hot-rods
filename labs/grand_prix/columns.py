@@ -52,11 +52,15 @@ def start(robot: racecar_core.Racecar):
     rc.drive.set_max_speed(max_speed)
 
     # Create scanning windows
-    global windows
-    global total_degrees
-    global total_windows
-    global start_degrees
-    global timer
+    global windows, total_degrees, start_degrees, total_windows, timer
+    windows = np.array(())
+    start_degrees = -45
+    total_degrees = 90
+    total_windows = 10
+    max_speed = 0.3
+    timer = 0
+    orientation = None
+
     timer = 0
     window_size = round(total_degrees / total_windows)
     for i in range(total_windows):
@@ -128,18 +132,19 @@ def update():
     """
 
     # If the distance in front of you is very close, SLOW DOWN
-    _, forward_dist = rc_utils.get_lidar_closest_point(scan, (-2, 2))
-    if forward_dist < 250 * max_speed and abs(speed) == speed:
-        multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0.05, 0.3)
-        speed = multiplier * speed
+    speed = 0.8
+    # _, forward_dist = rc_utils.get_lidar_closest_point(scan, (-2, 2))
+    # if forward_dist < 250 * max_speed and abs(speed) == speed:
+    #     multiplier = rc_utils.remap_range(forward_dist, 15 * max_speed, 250 * max_speed, 0.05, 0.3)
+    #     speed = multiplier * speed
 
     timer += rc.get_delta_time()
-    if timer < 2.5:
-        angle = 0
-        speed = -1
-    elif timer < 2.8:
-        angle = 0
-        speed = -0.2
+    # if timer < 2.5:
+    #     angle = 0
+    #     speed = -1
+    # elif timer < 2.8:
+    #     angle = 0
+    #     speed = -0.2
 
     # Prevent the car from wall following if it has empty space to either side
     # for window in ((268, 4), (88, 4)):
