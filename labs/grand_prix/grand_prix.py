@@ -1,4 +1,3 @@
-
 """
 Copyright MIT and Harvey Mudd College
 MIT License
@@ -156,3 +155,4 @@ def detectLineFollow() :
 if __name__ == "__main__":
     rc.set_start_update(start, update, None)
     rc.go()
+ 

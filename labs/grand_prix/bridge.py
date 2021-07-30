@@ -31,21 +31,13 @@ color_priority = []
 
 # Add any global variables here
 
+## TODO : ONE SIDE FOLLOWING
+
 ########################################################################################
 # Functions
 ########################################################################################
 
 def get_two_largest_contours(contours, min_area: int = 100):
-    """
-    Finds the largest contour with size greater than min_area.
-
-    Args:
-        contours: A list of contours found in an image.
-        min_area: The smallest contour to consider (in number of pixels)
-
-    Returns:
-        The largest contour from the list, or None if no contour was larger than min_area.
-    """
     if len(contours) == 0:
         # TODO: What should we return if the list of contours is empty?
         return None, None
@@ -92,7 +84,7 @@ def start(robot: racecar_core.Racecar):
 
     # Drive parameters
     rc.drive.stop()
-    rc.drive.set_max_speed(0.5)
+    rc.drive.set_max_speed(0.4)
 
     # Print start message
     print(">> The Bridge")
@@ -103,24 +95,20 @@ def update():
 
     # Find the largest contour
     image = rc.camera.get_color_image()
-
-    # Get the AR markers BEFORE we crop it
-    markers = rc_utils.get_ar_markers(image)
    
     # Crop the image
     image = rc_utils.crop(image, CROP_FLOOR[0], CROP_FLOOR[1])
 
     color_index = -1
-    for color in color_priority:
+    for color in color_priority: 
         color_index += 1
         contours = rc_utils.find_contours(image, color[0], color[1])
         if len(contours) != 0:
             if len(contours) != 0 and len(sorted(contours, key=len, reverse=True)[0]) > 100:
                 break
-
+        
     largest_contour_1, largest_contour_2 = get_two_largest_contours(contours)
-    contour_centers = []
-
+    contour_centers = [] 
 
     # Draw it on the image
     for contour in [largest_contour_1, largest_contour_2]:
