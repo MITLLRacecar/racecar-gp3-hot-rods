@@ -122,16 +122,23 @@ def update():
       if center_distance < 350:
         if item == "blue":
           speed = 1
-          rc.drive.set_speed_angle(speed, angle)
-          if forward_dist < 35:
-            rc.drive.stop()
+          if forward_dist < 45:
+            speed = -0.2
+          elif forward_dist < 25:
+            speed = 0
         else:
           speed = 0
+          
       else:
         # for now use right, left triggers for line following
         speed = 1
-      rc.drive.set_speed_angle(speed, angle)
-  pass
+
+    print(scan[0])
+    if scan[0] < 22:
+      print("BACKING UP FROM ELEVATOR")
+      speed = -0.1
+    rc.drive.set_speed_angle(speed, angle)
+  
 
 # id = 3, ori = 0
 

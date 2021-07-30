@@ -34,7 +34,7 @@ from enum import IntEnum
 rc = racecar_core.create_racecar()
 
 MARKER_DETECTION_DISTANCE = 100
-MIN_STATE_TIMER = 4
+MIN_STATE_TIMER = 6
 # Enables manual robot control override
 DEBUG = False
 
@@ -102,6 +102,9 @@ def detectARMarkers() :
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
+    colorImage = rc_utils.crop(colorImage, (0, 100), (480, 540))
+    depthImage = rc_utils.crop(depthImage, (0, 100), (480, 540))
+
     markers = rc_utils.get_ar_markers(colorImage)
 
     if rc.controller.was_pressed((rc.controller.Button.A)) : print("Current Segment: " + str(currentSegment))
@@ -116,8 +119,15 @@ def detectARMarkers() :
         center = tuple(map(sum, zip(0.5 * top_left, 0.5 * bottom_right))) 
         distance = depthImage[int(center[0])][int(center[1])]
 
-        distanceOffset = 200 if id == Segment.Elevator else 0
-        
+        if id == Segment.Elevator:
+            distanceOffset = 350
+        elif id == Segment.WallFollow:
+            #distanceOffset = -30
+            distanceOffset = 0
+            pass
+        else:
+            distanceOffset = 0
+
         # Update current segment
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
             currentSegment = id

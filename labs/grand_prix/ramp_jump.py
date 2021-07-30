@@ -170,7 +170,7 @@ def update():
     # slow down if in ramp section
     if rc_utils.get_lidar_average_distance(scan, 45, 90) > 4000: # and abs(contour_centers_average_x - rc.camera.get_width() / 2) < 20:
         speed = 0.7
-        angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 2
+        angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -0.5, 0.5) * 1.5
 
     angle = rc_utils.clamp(angle, -1, 1)
 
