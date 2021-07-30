@@ -60,7 +60,6 @@ def get_two_largest_contours(contours, min_area: int = 100):
     elif maxContourArea > min_area:
         return contours[final_i], None
     else:
-        print("No orange or purple contours detected")
         return None, None
 
 def start(robot: racecar_core.Racecar):
@@ -75,7 +74,6 @@ def start(robot: racecar_core.Racecar):
         marker = markers[0]
         marker.detect_colors(image, [PURPLE, ORANGE_AR])
         marker_color = marker.get_color()
-        print(marker_color)
 
     if marker_color == "orange":
         color_priority = [PURPLE, ORANGE] # color priority for orange ar code
@@ -104,8 +102,7 @@ def update():
     secondary_contours = rc_utils.find_contours(image, color_priority[0][0], color_priority[0][1])
     largest_secondary_contour = rc_utils.get_largest_contour(secondary_contours, 100)
     if type(largest_secondary_contour) == np.ndarray:
-        print("SLOWED")
-        speed = 0.5
+        speed = 0.8
     if color_priority[0][2] == "purple":
         image = cv.drawContours(image, secondary_contours, -1, (16, 134, 249), cv.FILLED)
     elif color_priority[0][2] == "orange":
@@ -120,7 +117,7 @@ def update():
                 break
         
     largest_contour_1, largest_contour_2 = get_two_largest_contours(contours)
-    contour_centers = [] 
+    contour_centers = []
 
     # Draw it on the image
     for contour in [largest_contour_1, largest_contour_2]:
@@ -131,7 +128,7 @@ def update():
     for center in contour_centers:
         rc_utils.draw_circle(image, center, (0,0,0), 6)
 
-    rc.display.show_color_image(image)
+    # rc.display.show_color_image(image)
     """
     if len(contour_centers) == 0:
         contour_centers_average_x = rc.camera.get_width() / 2

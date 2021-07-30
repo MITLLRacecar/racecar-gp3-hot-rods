@@ -69,7 +69,6 @@ def get_two_largest_contours(contours, min_area: int = 30):
     elif maxContourArea > min_area:
         return contours[final_i], None
     else:
-        print("No blue contours detected")
         return None, None
 
 
@@ -114,7 +113,6 @@ def update():
 
     # Draw it on the image
     for contour in [largest_contour_1, largest_contour_2]:
-        # print(image.shape)
         if type(contour) == np.ndarray:
             contour_centers.append(rc_utils.get_contour_center(contour))
             rc_utils.draw_contour(image, contour, (0, 0, 0))
@@ -122,7 +120,7 @@ def update():
     for center in contour_centers:
         rc_utils.draw_circle(image, center, (0, 0, 0), 6)
 
-    rc.display.show_color_image(image)
+    # rc.display.show_color_image(image)
 
     # remapping angle using p controller
     if len(contour_centers) == 0:
@@ -141,13 +139,10 @@ def update():
         contour_centers_average_x = rc.camera.get_width() - contour_centers[0][1]
         # Check if there is white (a ramp) to the left of the contour center!
         if contour_centers[0][1] > rc.camera.get_width() / 2:
-            print("CONTOUR RIGHT")
             side_pixel_check_channels = np.where(np.array(image[contour_centers[0][0], contour_centers[0][1] - 150]) > 110)[0]
         else:
-            print("CONTOUR LEFT")
             side_pixel_check_channels = np.where(np.array(image[contour_centers[0][0], contour_centers[0][1] + 150]) > 110)[0]
         if len(side_pixel_check_channels) == 3:
-            print("ON RAMP!")
             angle = (
                 rc_utils.remap_range(
                     contour_centers_average_x, 0, rc.camera.get_width(), -1, 1
@@ -165,11 +160,9 @@ def update():
 
     # slow down if in orange section
     if largest_orange_contour_area > 24000:
-        print("ORANGE")
         angle = 0
         speed = 0.1
     elif largest_orange_contour_area > 15000:
-        print("ORANGE STOP")
         angle = 0
         speed = 0.1
 
@@ -177,7 +170,6 @@ def update():
     # slow down if in ramp section
     if rc_utils.get_lidar_average_distance(scan, 45, 90) > 4000: # and abs(contour_centers_average_x - rc.camera.get_width() / 2) < 20:
         speed = 0.7
-        print("ON FINAL RAMP!")
         angle = rc_utils.remap_range(contour_centers_average_x, 0, rc.camera.get_width(), -1, 1) * 2
 
     angle = rc_utils.clamp(angle, -1, 1)

@@ -54,6 +54,8 @@ def start(robot: racecar_core.Racecar):
     global total_degrees
     global total_windows
     global start_degrees
+    global timer
+    timer = 0
     window_size = round(total_degrees / total_windows)
     for i in range(total_windows):
         windows = np.append(windows, i * window_size)
