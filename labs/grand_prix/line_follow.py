@@ -46,6 +46,8 @@ angle = 0.0  # The current angle of the car's wheels
 contour_center = None  # The (pixel row, pixel column) of contour
 contour_area = 0  # The area of contour
 color_list = [GREEN]
+MAX_SPEED = 0.7
+id = 0
 
 ########################################################################################
 # Functions
@@ -60,6 +62,7 @@ def update_contour():
     global contour_center
     global contour_area
     global color_list
+    global CROP_FLOOR
 
     image = rc.camera.get_color_image()
 
@@ -110,7 +113,8 @@ def update_contour():
                 contour_area = 0
 
         # Display the image to the screen
-        # rc.display.show_color_image(image)
+        print(image.shape)
+        rc.display.show_color_image(image)
 
 def start(robot: racecar_core.Racecar):
     global rc
@@ -122,6 +126,7 @@ def start(robot: racecar_core.Racecar):
     global speed
     global angle
     global CROP_FLOOR
+    global id
 
     # Initialize variables
     speed = 0
@@ -132,7 +137,15 @@ def start(robot: racecar_core.Racecar):
 
     # Set update_slow to refresh every half second
     rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(0.6)
+
+    image = rc.camera.get_color_image()
+    markers = rc_utils.get_ar_markers(image)
+    if len(markers) > 0: 
+        marker = markers[0]
+        id = marker.get_id()
+        if id == 4: # Cones
+            print("CROP CHANGED")
+            CROP_FLOOR = ((465, 50), (rc.camera.get_height(), rc.camera.get_width() - 50))
 
     print(">> Line Following")
 
@@ -174,6 +187,10 @@ def update():
     """
     global speed
     global angle
+    global MAX_SPEED
+    global CROP_FLOOR
+    global id
+    rc.drive.set_max_speed(MAX_SPEED)
 
     # Search for contours in the current color image
     update_contour()
@@ -184,27 +201,17 @@ def update():
         # Current implementation: bang-bang control (very choppy)
         # TODO (warmup): Implement a smoother way to follow the line
         kP = 2
+        # Slow down if cone ar code is detected
         angle = rc_utils.clamp(kP * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
+
+        if id == 4: # Cones
+            kP = 2.5
+            print("CLAMPING")
+            angle = rc_utils.clamp(kP * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
 
     speed = 1
 
-    
-    # Slow down if cone ar code is detected
-    image = rc.camera.get_color_image()
-    markers = rc_utils.get_ar_markers(image)
-    if len(markers) > 0: 
-        marker = markers[0]
-        id = marker.get_id()
-        if id == 4: # Cones
-            rc.drive.set_max_speed(0.3)
-        if id == 6: # Slabs
-            rc.drive.set_max_speed(0.35)
-        if id == 0: # Wall Follow
-            rc.drive.set_max_speed(0.5)
-        if id == 3: # Elevator
-            rc.drive.set_max_speed(0.45)
-        if id == 8: # RampJump
-            rc.drive.set_max_speed(0.5)
+
 
     # Slow down if something is in front
     depth_image = rc.camera.get_depth_image()

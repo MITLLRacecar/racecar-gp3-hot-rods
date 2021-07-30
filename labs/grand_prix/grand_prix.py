@@ -143,6 +143,8 @@ def detectARMarkers() :
                     WALL_FOLLOWED_BEFORE = True
                 elif WALL_FOLLOWED_BEFORE == True:
                     currentSegment = Segment.LineFollow
+                    print("WALL FOLLOW SLOWER")
+                    lineFollow.MAX_SPEED = 0.55
 
             rc.drive.stop()
 
@@ -150,9 +152,25 @@ def detectARMarkers() :
             timer = 0
             SegmentMappings[currentSegment].start(rc)
 
-            if id == Segment.LineFollow:
-                lineFollow.MAX_SPEED = 0.3 if prevSegment == Segment.SlabSlalom else 0.5
-                lineFollow.MAX_SPEED = 0.2 if prevSegment == Segment.Elevator else 0.5
+            if SegmentMappings[id] == lineFollow:
+                if WALL_FOLLOWED_BEFORE == True:
+                    print("WALL FOLLOW SLOWER")
+                    lineFollow.MAX_SPEED = 0.5
+                if id == Segment.ConeSlalom: # Cones
+                    print("CONES SLOWER")
+                    lineFollow.MAX_SPEED = 0.3
+                if id == Segment.SlabSlalom: # Slabs
+                    print("SLAB SLOWER")
+                    lineFollow.MAX_SPEED = 0.5
+                if id == Segment.Columns: # Wall Follow
+                    print("WALL FOLLOW SLOWER")
+                if id == Segment.Elevator: # Elevator
+                    print("ELEVATOR")
+                    lineFollow.MAX_SPEED = 0.45
+                if id == Segment.RampJump: # RampJump
+                    print("RAMPJUMP")
+                    lineFollow.MAX_SPEED = 0.5
+                    
 
 def detectLineFollow() :
     global timer, currentSegment
