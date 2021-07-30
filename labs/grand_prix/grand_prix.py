@@ -37,6 +37,7 @@ MARKER_DETECTION_DISTANCE = 100
 MIN_STATE_TIMER = 6
 # Enables manual robot control override
 DEBUG = False
+WALL_FOLLOWED_BEFORE = False
 
 # Marker IDs for each segment
 class Segment (IntEnum) :
@@ -60,9 +61,9 @@ SegmentMappings = {
     Segment.LineFollow: lineFollow,
     Segment.WallFollow: wallFollow,
     Segment.Bridge: bridge,
-    Segment.Columns : columns,
+    Segment.Columns : lineFollow,
     Segment.Elevator : elevator,
-    Segment.ConeSlalom : coneSlalom,
+    Segment.ConeSlalom : lineFollow,
     Segment.Trains : lineFollow,
     Segment.SlabSlalom : lineFollow,
     Segment.RampJump : rampJump
@@ -87,7 +88,7 @@ def start():
 
 def update():
     detectARMarkers()
-    if currentSegment is not Segment.LineFollow : detectLineFollow()
+    if currentSegment not in [Segment.LineFollow, Segment.ConeSlalom, Segment.SlabSlalom] : detectLineFollow()
 
     # Update selected segment
     SegmentMappings[currentSegment].update()
@@ -98,13 +99,13 @@ def update():
     rc.controller.get_joystick(rc.controller.Joystick.LEFT)[0])
 
 def detectARMarkers() :
-    global currentSegment, timer, colorImage
+    global currentSegment, timer, colorImage, WALL_FOLLOWED_BEFORE
 
     colorImage = rc.camera.get_color_image()
     depthImage = rc.camera.get_depth_image()
     colorImage = rc_utils.crop(colorImage, (0, 230), (480, 430))
     depthImage = rc_utils.crop(depthImage, (0, 230), (480, 430))
-    rc.display.show_color_image(colorImage)
+    # rc.display.show_color_image(colorImage)
 
     markers = rc_utils.get_ar_markers(colorImage)
 
@@ -125,20 +126,33 @@ def detectARMarkers() :
         elif id == Segment.WallFollow:
             #distanceOffset = -30
             distanceOffset = 0
-        elif id == Segment.LineFollow :
-            lineFollow.MAX_SPEED = 0.4 if currentSegment == Segment.SlabSlalom else 0.45
 
         else:
             distanceOffset = 0
 
         # Update current segment
         if currentSegment != id and id in Segment._value2member_map_ and distance < MARKER_DETECTION_DISTANCE + distanceOffset:
+            prevSegment = currentSegment
+
             currentSegment = id
+
+            print(WALL_FOLLOWED_BEFORE)
+            if id == Segment.WallFollow:
+                if WALL_FOLLOWED_BEFORE == False:
+                    currentSegment = id
+                    WALL_FOLLOWED_BEFORE = True
+                elif WALL_FOLLOWED_BEFORE == True:
+                    currentSegment = Segment.LineFollow
+
             rc.drive.stop()
 
             # Start selected segment
             timer = 0
             SegmentMappings[currentSegment].start(rc)
+
+            if id == Segment.LineFollow:
+                lineFollow.MAX_SPEED = 0.3 if prevSegment == Segment.SlabSlalom else 0.5
+                lineFollow.MAX_SPEED = 0.2 if prevSegment == Segment.Elevator else 0.5
 
 def detectLineFollow() :
     global timer, currentSegment

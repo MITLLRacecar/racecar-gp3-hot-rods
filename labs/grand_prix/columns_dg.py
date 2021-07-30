@@ -83,7 +83,7 @@ def update():
     left_angle, left_dist = rc_utils.get_lidar_closest_point(scan, LEFT_WINDOW)
     right_angle, right_dist = rc_utils.get_lidar_closest_point(scan, RIGHT_WINDOW)
 
-    rc.display.show_lidar(scan, 128, 1000, [(left_angle, left_dist), (right_angle, right_dist)])
+    # rc.display.show_lidar(scan, 128, 1000, [(left_angle, left_dist), (right_angle, right_dist)])
 
     if robot_mode == Mode.WallFollow :
         error = right_dist - left_dist

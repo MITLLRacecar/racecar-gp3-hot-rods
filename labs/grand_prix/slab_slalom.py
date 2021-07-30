@@ -252,7 +252,7 @@ def cropToOrange():
         waypoint = (rc.camera.get_height() // 2, rc.camera.get_width() // 2)
         non_weighted_waypoint = None
         
-    rc.display.show_color_image(cropped_image)
+    # rc.display.show_color_image(cropped_image)
 
 def turn(angle) :
     # print("TURN")

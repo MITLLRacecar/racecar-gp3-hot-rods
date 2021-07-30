@@ -82,7 +82,7 @@ def start(robot: racecar_core.Racecar):
 
     # Drive parameters
     rc.drive.stop()
-    rc.drive.set_max_speed(0.4)
+    rc.drive.set_max_speed(0.50)
 
     # Print start message
     print(">> The Bridge")
@@ -91,6 +91,7 @@ def start(robot: racecar_core.Racecar):
 def update():
     global color_priority
     speed = 1
+    contour_centers_average_x = 320
 
     # Find the largest contour
     image = rc.camera.get_color_image()
@@ -102,7 +103,7 @@ def update():
     secondary_contours = rc_utils.find_contours(image, color_priority[0][0], color_priority[0][1])
     largest_secondary_contour = rc_utils.get_largest_contour(secondary_contours, 100)
     if type(largest_secondary_contour) == np.ndarray:
-        speed = 0.8
+        speed = 0.5
     if color_priority[0][2] == "purple":
         image = cv.drawContours(image, secondary_contours, -1, (16, 134, 249), cv.FILLED)
     elif color_priority[0][2] == "orange":

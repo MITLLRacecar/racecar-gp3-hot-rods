@@ -132,7 +132,7 @@ def start(robot: racecar_core.Racecar):
 
     # Set update_slow to refresh every half second
     rc.set_update_slow_time(0.5)
-    rc.drive.set_max_speed(0.5)
+    rc.drive.set_max_speed(0.6)
 
     print(">> Line Following")
 
@@ -183,26 +183,32 @@ def update():
     if contour_center is not None:
         # Current implementation: bang-bang control (very choppy)
         # TODO (warmup): Implement a smoother way to follow the line
-        kP = 2.0
+        kP = 2
         angle = rc_utils.clamp(kP * remap_range(contour_center[1], 0, rc.camera.get_width(), -1, 1), -1, 1)
 
     speed = 1
 
     
-    # Slow down if wall follow ar code is detected
+    # Slow down if cone ar code is detected
     image = rc.camera.get_color_image()
     markers = rc_utils.get_ar_markers(image)
     if len(markers) > 0: 
         marker = markers[0]
         id = marker.get_id()
-        if id == 0:
-            rc.drive.set_max_speed(0.2)
+        if id == 4: # Cones
+            rc.drive.set_max_speed(0.3)
+        if id == 6: # Slabs
+            rc.drive.set_max_speed(0.35)
+        if id == 0: # Wall Follow
+            rc.drive.set_max_speed(0.5)
+        if id == 3: # Elevator
+            rc.drive.set_max_speed(0.45)
+        if id == 8: # RampJump
+            rc.drive.set_max_speed(0.5)
 
     # Slow down if something is in front
     depth_image = rc.camera.get_depth_image()
-    #if depth_image[240, 320] < 40:
-        #speed = 0.1
-    rc.drive.set_speed_angle(speed, angle)
+    scan = rc.lidar.get_samples()
 
     # Print the current speed and angle when the A button is held down
     if rc.controller.is_down(rc.controller.Button.LB):
@@ -214,6 +220,8 @@ def update():
             print("No contour found")
         else:
             print("Center:", contour_center, "Area:", contour_area)
+
+    rc.drive.set_speed_angle(speed, angle)
 
 
 ########################################################################################
