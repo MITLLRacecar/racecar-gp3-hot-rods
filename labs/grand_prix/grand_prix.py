@@ -16,7 +16,7 @@ import numpy as np
 sys.path.insert(0, "../../library")
 import cone_slalom as coneSlalom
 import line_follow as lineFollow
-import wall_follow_2 as wallFollow
+import wall_follow as wallFollow
 import bridge as bridge
 import columns as columns
 import elevator as elevator
@@ -63,8 +63,8 @@ SegmentMappings = {
     Segment.Columns : columns,
     Segment.Elevator : elevator,
     Segment.ConeSlalom : coneSlalom,
-    Segment.Trains : trains,
-    Segment.SlabSlalom : slabSlalom,
+    Segment.Trains : lineFollow,
+    Segment.SlabSlalom : lineFollow,
     Segment.RampJump : rampJump
 }
 
@@ -124,7 +124,9 @@ def detectARMarkers() :
         elif id == Segment.WallFollow:
             #distanceOffset = -30
             distanceOffset = 0
-            pass
+        elif id == Segment.LineFollow :
+            lineFollow.MAX_SPEED = 0.4 if currentSegment == Segment.SlabSlalom else 0.45
+
         else:
             distanceOffset = 0
 

@@ -89,7 +89,7 @@ def update():
         previousTurnLock = False
     elif previousTurn == Turn.Right and not gray_detected :
         if closeToWall() or (timer > 0.6 and orange_detected): turn(-TURN_ANGLE)
-        elif inCenter() : turn(-0.15)
+        elif inCenter() : turn(0)
         else : turn(0)
         previousTurnLock = False
     else : 
@@ -259,7 +259,7 @@ def turn(angle) :
     rc.drive.set_speed_angle(MAX_SPEED * 1.0, angle)
 
 def angleController():
-    kP = 1.0
+    kP = 0.8
     error = waypoint[1] - rc.camera.get_width() / 2
     angle =  kP * error / (rc.camera.get_width() / 2)
     return rc_utils.clamp(angle, -1, 1)   
