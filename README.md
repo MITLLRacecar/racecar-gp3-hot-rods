@@ -7,7 +7,7 @@ Contributors :
  - [Joseph Lee](https://github.com/jjosephlee)
  - [Anna Chatterji](https://github.com/anna-chatterji)
 
-Thanks for a great month everyone ♥️ 
+All of us pushed an all nighter for this. Thanks for a great month everyone ♥️ 
 
 ## Usage
 
