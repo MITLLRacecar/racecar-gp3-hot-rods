@@ -23,6 +23,6 @@ Run `racecar sim grand_prix.py` with the [Simulator Environment](https://github.
 
 ## Structure
 
-Each Python module inside `labs/grand_prix` contains the code for a particular segment of the track. 
+Each Python module inside `/grand_prix` contains the code for a particular segment of the track. 
 
 `grand_prix.py` and `grand_prix_fast.py` pass the Racecar object to each of these modules as they detect AR Markers along the course. The file mappings are stored inside a `dict` mapped to an `IntEnum` for AR detection in both Grand Prix files.
