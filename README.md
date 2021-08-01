@@ -9,6 +9,10 @@ Contributors :
 
 All of us pushed an all nighter for this. Thanks for a great month everyone ♥️ 
 
+## Watch
+
+You can watch a video of the playthrough here: https://www.youtube.com/watch?v=VQFt_Yp8H8M&ab_channel=DanielChuang
+
 ## Usage
 
 - `grand_prix_fast.py` runs our record time code for the GP (opting to use line following for certain segments as it is faster)
