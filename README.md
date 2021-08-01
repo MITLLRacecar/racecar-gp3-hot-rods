@@ -7,7 +7,7 @@ Contributors :
  - [Joseph Lee](https://github.com/jjosephlee)
  - [Anna Chatterji](https://github.com/anna-chatterji)
 
-All of us pushed an all nighter for this. Thanks for a great month everyone ♥️ 
+All of us pushed an all nighter for this. Thanks for a great BWSI everyone ♥️ 
 
 ## Watch
 
@@ -17,7 +17,7 @@ You can watch a video of our record playthrough [here](https://www.youtube.com/w
 
 - `grand_prix_fast.py` runs our record time code for the GP (opting to use line following for certain segments as it is faster).
 
-- `grand_prix.py` runs our code with each module segments as intended, but produces a slower time.
+- `grand_prix.py` runs our code with each segment completed as intended, but produces a slower time.
 
 Run `racecar sim grand_prix.py` with the [Simulator Environment](https://github.com/MITLLRacecar/Simulation) open to run the code. 
 
