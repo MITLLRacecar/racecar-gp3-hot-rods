@@ -11,7 +11,7 @@ All of us pushed an all nighter for this. Thanks for a great BWSI everyone â™¥ï¸
 
 ## Watch
 
-You can watch a video of our record playthrough [here](https://www.youtube.com/watch?v=VQFt_Yp8H8M&ab_channel=DanielChuang).[![Screen Shot 2021-07-30 at 4 11 08 PM](https://user-images.githubusercontent.com/45211793/127763087-05ec0ae3-220b-4dfa-a20d-3f61bd817b6f.png)](https://www.youtube.com/watch?v=VQFt_Yp8H8M&ab_channel=DanielChuang)
+You can watch a video of our record playthrough [here](https://www.youtube.com/watch?v=VQFt_Yp8H8M&ab_channel=DanielChuang).[![The 2021 Grand Prix Record](https://user-images.githubusercontent.com/38931252/127909573-17bd9b98-ea9f-44c8-a21e-4903fb9a50fc.PNG)](https://www.youtube.com/watch?v=VQFt_Yp8H8M&ab_channel=DanielChuang)
 
 ## Usage
 
